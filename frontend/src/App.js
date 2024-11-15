@@ -15,6 +15,9 @@ import {
   Settings,
   Image as ImageIcon,
   File,
+  Menu,
+  ArrowLeft,
+  X
 } from 'lucide-react';
 
 const socket = io('http://localhost:3001');
@@ -46,9 +49,22 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // New states for responsive design
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  // Remove this line
+  // const [showMobileNav, setShowMobileNav] = useState(false);
+
+
+
   // Refs
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Add typing states
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false); // Replace typingUsers
+  const [typingTimeout, setTypingTimeout] = useState(null);
 
   // Functions
   const scrollToBottom = useCallback(() => {
@@ -56,6 +72,61 @@ function App() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, []);
+
+  const handleTypingStart = () => {
+    if (!activeRoom) return;
+    
+    clearTimeout(typingTimeout);
+    
+    const newTimeout = setTimeout(() => {
+      setIsTyping(false);
+      fetch('http://localhost:3001/api/typing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: activeRoom.id,
+          userId: userId,
+          typing: false
+        })
+      });
+    }, 1000);
+    
+    setTypingTimeout(newTimeout);
+  
+    if (!isTyping) {
+      setIsTyping(true);
+      fetch('http://localhost:3001/api/typing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: activeRoom.id,
+          userId: userId,
+          typing: true
+        })
+      });
+    }
+  };
+
+  // Modify your message input handling
+  const handleMessageChange = (e) => {
+    setMessage(e.target.value);
+    handleTypingStart();
+  };
+
+  // Check for mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setShowSidebar(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
 
   const fetchUsers = useCallback(async () => {
     if (!userId) return;
@@ -112,6 +183,21 @@ function App() {
     }
   }, [userId, fetchUsers]);
   
+  useEffect(() => {
+    if (!activeRoom) return;
+  
+    const pollTypingStatus = setInterval(async () => {
+      try {
+        const response = await fetch(`http://localhost:3001/api/typing/${activeRoom.id}`);
+        const data = await response.json();
+        setOtherUserTyping(data.typingUsers.includes(activeRoom.otherUser.id));
+      } catch (error) {
+        console.error('Error polling typing status:', error);
+      }
+    }, 1000);
+  
+    return () => clearInterval(pollTypingStatus);
+  }, [activeRoom]);
 
   const handleLogin = async () => {
     if (!username.trim()) {
@@ -159,6 +245,10 @@ function App() {
       
       const messagesResponse = await axios.get(`http://localhost:3001/api/messages/${roomId}`);
       setMessages(messagesResponse.data);
+
+      if (isMobile) {
+        setShowSidebar(false);
+      }
     } catch (error) {
       console.error('Error starting chat:', error);
     }
@@ -169,11 +259,29 @@ function App() {
     
     if (!message.trim() || !activeRoom) return;
 
+    clearTimeout(typingTimeout);
+    setIsTyping(false);
+    fetch('http://localhost:3001/api/typing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roomId: activeRoom.id,
+        userId: userId,
+        typing: false
+      })
+    });
+
     const messageData = {
       roomId: activeRoom.id,
       userId,
       content: message.trim()
     };
+
+    fetch('http://localhost:3001/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(messageData)
+    });
     
     socket.emit('send_message', messageData);
     setMessage('');
@@ -452,10 +560,21 @@ function App() {
     );
   };
 
+  // Mobile Navigation Component
+  
+  // Add TypingIndicator component
+  const TypingIndicator = () => (
+    <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 rounded-xl max-w-[100px]">
+      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+    </div>
+  );
+
   if (!userId) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#f5f5f5]">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+      <div className="flex items-center justify-center min-h-screen bg-[#f5f5f5] p-4">
+        <div className="bg-white p-6 lg:p-8 rounded-lg shadow-md w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-[#464775] rounded-lg flex items-center justify-center mx-auto mb-4">
               <MessageSquare size={32} className="text-white" />
@@ -497,8 +616,8 @@ function App() {
 
   return (
     <div className="flex h-screen bg-[#f5f5f5]">
-      {/* Left Sidebar - Navigation */}
-      <div className="w-12 bg-[#464775] flex flex-col items-center py-4 space-y-4">
+      {/* Desktop Navigation Sidebar */}
+      <div className="hidden lg:flex w-12 bg-[#464775] flex-col items-center py-4 space-y-4">
         <button type="button" className="p-2 text-white hover:bg-[#5c5c94] rounded">
           <MessageSquare size={20} />
         </button>
@@ -517,21 +636,34 @@ function App() {
           <Settings size={20} />
         </button>
       </div>
+
       {/* Chat List Sidebar */}
-      <div className="w-80 bg-[#f0f0f0] border-r flex flex-col">
-        <div className="p-3">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-full pl-8 pr-3 py-1.5 bg-white rounded text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-2 top-2 text-gray-400" size={16} />
+      <div className={`${
+        showSidebar ? 'flex' : 'hidden'
+      } w-full lg:w-80 bg-white lg:bg-[#f0f0f0] border-r flex-col absolute lg:relative z-20 h-full`}>
+        <div className="p-3 flex items-center justify-between border-b">
+          {isMobile && activeRoom && (
+            <button
+              onClick={() => setShowSidebar(false)}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <X size={20} />
+            </button>
+          )}
+          <div className="flex-1 px-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search"
+                className="w-full pl-8 pr-3 py-1.5 bg-gray-100 rounded-full text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-2 top-2 text-gray-400" size={16} />
+            </div>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto">
           <div className="px-3 py-2 text-sm font-semibold text-gray-600">
             Chats
@@ -579,32 +711,39 @@ function App() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className={`flex-1 flex flex-col bg-white ${
+        isMobile && showSidebar ? 'hidden' : 'flex'
+      }`}>
         {activeRoom ? (
           <>
-            {/* Chat Header */}
+            {/* Chat Header - Modified for mobile */}
             <div className="h-14 border-b flex items-center justify-between px-4">
               <div className="flex items-center space-x-3">
+              {isMobile && (
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4">
+                  <button 
+                    onClick={() => setShowSidebar(true)}
+                    className="p-3 text-gray-600 hover:text-[#464775]"
+                  >
+                    <MessageSquare size={24} />
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className="p-3 text-gray-600 hover:text-[#464775]"
+                  >
+                    <Settings size={24} />
+                  </button>
+                </div>
+              )}
                 <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
                   {activeRoom.otherUser.username[0].toUpperCase()}
                 </div>
                 <h2 className="font-semibold">{activeRoom.otherUser.username}</h2>
               </div>
-              {/* <div className="flex items-center space-x-3">
-                <button type="button" className="p-2 hover:bg-gray-100 rounded-full">
-                  <Phone size={20} className="text-[#464775]" />
-                </button>
-                <button type="button" className="p-2 hover:bg-gray-100 rounded-full">
-                  <Video size={20} className="text-[#464775]" />
-                </button>
-                <button type="button" className="p-2 hover:bg-gray-100 rounded-full">
-                  <MoreHorizontal size={20} className="text-gray-600" />
-                </button>
-              </div> */}
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-4 pb-20 lg:pb-4">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -674,11 +813,21 @@ function App() {
                   )}
                 </div>
               ))}
+              
+              {/* Typing Indicator */}
+              {activeRoom && otherUserTyping && (
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
+                    {activeRoom.otherUser.username[0].toUpperCase()}
+                  </div>
+                  <TypingIndicator />
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
-            <div className="border-t p-4">
+            <div className="border-t p-2 lg:p-4 bg-white">
               <div className="bg-[#f0f0f0] rounded-lg p-2">
                 <div className="flex items-center space-x-2 mb-2">
                   <div className="relative">
@@ -715,7 +864,7 @@ function App() {
                   <input
                     type="text"
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={handleMessageChange}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();

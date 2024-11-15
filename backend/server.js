@@ -10,11 +10,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000","192.168.1.3:3000"],
     methods: ["GET", "POST"]
   }
 });
 
+// Store typing status in memory
+const typingUsers = new Map();
 
 // PostgreSQL connection
 const pool = new Pool({
@@ -83,29 +85,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// API Routes
-// app.post('/api/users', async (req, res) => {
-//   const { username } = req.body;
-//   try {
-//     const result = await pool.query(
-//       'INSERT INTO users (username) VALUES ($1) RETURNING *',
-//       [username]
-//     );
-//     res.json(result.rows[0]);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.post('/api/rooms', async (req, res) => {
-//   try {
-//     const result = await pool.query('INSERT INTO chat_rooms DEFAULT VALUES RETURNING *');
-//     res.json(result.rows[0]);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
 app.post('/api/rooms', async (req, res) => {
     const { user1Id, user2Id } = req.body;
     
@@ -144,26 +123,6 @@ app.post('/api/rooms', async (req, res) => {
       res.status(500).json({ error: error.message });
     }
 });
-
-
-
-// app.get('/api/messages/:roomId', async (req, res) => {
-//   const { roomId } = req.params;
-//   try {
-//     const result = await pool.query(
-//       `SELECT m.*, u.username 
-//        FROM messages m 
-//        JOIN users u ON m.user_id = u.id 
-//        WHERE room_id = $1 
-//        ORDER BY created_at ASC`,
-//       [roomId]
-//     );
-//     res.json(result.rows);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
 
 app.get('/api/messages/:roomId', async (req, res) => {
     const { roomId } = req.params;
@@ -312,7 +271,81 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       res.status(500).json({ error: 'Failed to upload file' });
     }
 });
+
+// Test route to verify server is running
+app.get('/', (req, res) => {
+    res.json({ message: 'Server is running!' });
+});
   
+// Typing status endpoint
+app.post('/api/typing', (req, res) => {
+    console.log('Received typing update:', req.body); // Debug log
+    
+    const { roomId, userId, typing } = req.body;
+    
+    if (!roomId || !userId) {
+      return res.status(400).json({ 
+        error: 'Missing required fields' 
+      });
+    }
+  
+    const roomKey = `room:${roomId}`;
+    let roomTyping = typingUsers.get(roomKey) || new Set();
+  
+    if (typing) {
+      roomTyping.add(userId);
+    } else {
+      roomTyping.delete(userId);
+    }
+  
+    typingUsers.set(roomKey, roomTyping);
+  
+    // Auto-remove typing status after 3 seconds
+    setTimeout(() => {
+      const currentRoom = typingUsers.get(roomKey);
+      if (currentRoom) {
+        currentRoom.delete(userId);
+        if (currentRoom.size === 0) {
+          typingUsers.delete(roomKey);
+        } else {
+          typingUsers.set(roomKey, currentRoom);
+        }
+      }
+    }, 3000);
+  
+    res.json({
+      success: true,
+      typingUsers: Array.from(roomTyping)
+    });
+});
+  
+
+// Get typing status
+app.get('/api/typing/:roomId', (req, res) => {
+    const roomKey = `room:${req.params.roomId}`;
+    const roomTyping = typingUsers.get(roomKey) || new Set();
+    
+    res.json({
+      typingUsers: Array.from(roomTyping)
+    });
+});
+  
+  // Messages endpoint
+app.post('/api/messages', (req, res) => {
+    const { roomId, userId, content } = req.body;
+    
+    // Here you would typically save to database
+    const message = {
+      id: Date.now(),
+      roomId,
+      userId,
+      content,
+      created_at: new Date()
+    };
+  
+    res.json(message);
+});
+
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
