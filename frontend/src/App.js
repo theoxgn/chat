@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
+import EmojiPicker from 'emoji-picker-react';
 import axios from 'axios';
 import {
   Search,
-  Phone,
-  Video,
-  MoreHorizontal,
   Paperclip,
   Smile,
   Send,
@@ -15,8 +13,6 @@ import {
   Settings,
   Image as ImageIcon,
   File,
-  Menu,
-  ArrowLeft,
   X
 } from 'lucide-react';
 
@@ -52,19 +48,26 @@ function App() {
   // New states for responsive design
   const [showSidebar, setShowSidebar] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  // Remove this line
-  // const [showMobileNav, setShowMobileNav] = useState(false);
-
-
 
   // Refs
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // emoji picker
+  const [showEmoji, setShowEmoji] = useState(false);
+  const inputRef = useRef(null);
+  const emojiPickerRef = useRef(null);
+
   // Add typing states
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false); // Replace typingUsers
   const [typingTimeout, setTypingTimeout] = useState(null);
+
+  // Add new state for online users
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [messageStatuses, setMessageStatuses] = useState({});
 
   // Functions
   const scrollToBottom = useCallback(() => {
@@ -127,6 +130,61 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Click Outside Handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmoji(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup emoji picker when component unmounts
+  useEffect(() => {
+    return () => {
+      setShowEmoji(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+  
+    // Emit online status when user logs in
+    socket.emit('user_online', userId);
+  
+    // Listen for user status changes
+    socket.on('user_status_change', ({ userId, online }) => {
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        if (online) {
+          newSet.add(userId);
+        } else {
+          newSet.delete(userId);
+        }
+        return newSet;
+      });
+    });
+  
+    // Fetch initial online users
+    fetch('http://localhost:3001/api/users/online')
+      .then(res => res.json())
+      .then(onlineUserIds => {
+        setOnlineUsers(new Set(onlineUserIds));
+      });
+  
+    // Cleanup
+    return () => {
+      socket.emit('user_offline', userId);
+      socket.off('user_status_change');
+    };
+  }, [userId]);
+
+  
 
   const fetchUsers = useCallback(async () => {
     if (!userId) return;
@@ -223,6 +281,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    socket.emit('user_offline', userId);
     socket.emit('user_disconnected', userId);
     setUserId(null);
     setUsername('');
@@ -254,12 +313,14 @@ function App() {
     }
   };
 
-  const sendMessage = (e) => {
+  const sendMessage = async (e) => {
     if (e) e.preventDefault();
-    
     if (!message.trim() || !activeRoom) return;
 
+    setMessage(''); // Clear input
+    setShowEmoji(false); // Close emoji picker
     clearTimeout(typingTimeout);
+    
     setIsTyping(false);
     fetch('http://localhost:3001/api/typing', {
       method: 'POST',
@@ -274,17 +335,30 @@ function App() {
     const messageData = {
       roomId: activeRoom.id,
       userId,
-      content: message.trim()
+      content: message.trim(),
+      created_at: new Date(),
+      read: false
     };
 
-    fetch('http://localhost:3001/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(messageData)
-    });
-    
-    socket.emit('send_message', messageData);
-    setMessage('');
+    try {
+      const response = await axios.post('http://localhost:3001/api/messages', messageData);
+      const messageId = response.data.id;
+  
+      // Update message statuses
+      setMessageStatuses(prev => ({
+        ...prev,
+        [messageId]: {
+          sent: true,
+          delivered: false,
+          read: false
+        }
+      }));
+  
+      socket.emit('send_message', { ...messageData, id: messageId });
+      setMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   const handleAttachment = (type) => {
@@ -296,11 +370,11 @@ function App() {
 
   // Function to format file size
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
   // Function to get file icon based on type
@@ -353,7 +427,7 @@ function App() {
         fileSize: file.size,
         messageType: 'file'
       };
-  
+      console.log(fileMessage)
       socket.emit('send_message', fileMessage);
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -463,9 +537,51 @@ function App() {
   };
 
   const FileMessage = ({ msg, isOwn }) => {
-    // Check if file is an image
+
+    // Check file type
     const isImage = msg.fileType?.startsWith('image/');
     const isVideo = msg.fileType?.startsWith('video/');
+    const isPDF = msg.fileType?.includes('pdf');
+
+    // Progress state for download
+    const [downloadProgress, setDownloadProgress] = useState(0);
+    const [isDownloading, setIsDownloading] = useState(false);
+  
+    const handleDownload = async (url, filename) => {
+      try {
+        setIsDownloading(true);
+        
+        const response = await axios({
+          url,
+          method: 'GET',
+          responseType: 'blob',
+          onDownloadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setDownloadProgress(progress);
+          },
+        });
+  
+        // Create blob link to download
+        const blob = new Blob([response.data]);
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+        
+      } catch (error) {
+        console.error('Download failed:', error);
+        alert('Failed to download file. Please try again.');
+      } finally {
+        setIsDownloading(false);
+        setDownloadProgress(0);
+      }
+    };
   
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
@@ -474,19 +590,16 @@ function App() {
             {msg.username?.[0].toUpperCase()}
           </div>
         )}
-        <div
-          className={`max-w-[70%] rounded-lg p-3 ${
-            isOwn ? 'bg-[#464775] text-white' : 'bg-[#f0f0f0]'
-          }`}
-        >
+        <div className={`
+          max-w-[70%] rounded-lg p-3 
+          ${isOwn ? 'bg-[#464775] text-white' : 'bg-[#f0f0f0]'}
+        `}>
           {!isOwn && (
-            <div className="text-sm font-semibold mb-1">
-              {msg.username}
-            </div>
+            <div className="text-sm font-semibold mb-1">{msg.username}</div>
           )}
           
           <div className="space-y-2">
-            {/* File Preview/Download Section */}
+            {/* Image Preview */}
             {isImage ? (
               <div className="relative group">
                 <img
@@ -496,14 +609,19 @@ function App() {
                   onClick={() => window.open(msg.fileUrl, '_blank')}
                 />
                 <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a
-                    href={msg.fileUrl}
-                    download={msg.fileName}
-                    className="p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70"
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
+                    disabled={isDownloading}
+                    className="p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-white"
                   >
-                    ⬇️
-                  </a>
+                    {isDownloading ? (
+                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             ) : isVideo ? (
@@ -514,18 +632,23 @@ function App() {
                   className="max-w-full rounded-lg"
                 />
                 <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a
-                    href={msg.fileUrl}
-                    download={msg.fileName}
+                  <button
+                    onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
+                    disabled={isDownloading}
                     className="p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70"
-                    onClick={(e) => e.stopPropagation()}
                   >
-                    ⬇️
-                  </a>
+                    {isDownloading ? (
+                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-3 hover:bg-opacity-90 transition-all">
+              <div className="flex items-center space-x-3 hover:bg-opacity-90 transition-all p-2 rounded-lg">
                 <div className="text-2xl">
                   {msg.fileType?.includes('pdf') ? '📄' :
                    msg.fileType?.includes('word') ? '📝' :
@@ -538,15 +661,28 @@ function App() {
                   <div className="text-xs opacity-70">
                     {formatFileSize(msg.fileSize)}
                   </div>
+                  {isDownloading && (
+                    <div className="w-full h-1 bg-gray-200 rounded-full mt-1">
+                      <div 
+                        className="h-full bg-[#464775] rounded-full transition-all duration-300"
+                        style={{ width: `${downloadProgress}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
-                <a
-                  href={msg.fileUrl}
-                  download={msg.fileName}
-                  className="p-2 hover:bg-black hover:bg-opacity-10 rounded-full"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
+                  disabled={isDownloading}
+                  className="p-2 hover:bg-black hover:bg-opacity-10 rounded-full focus:outline-none focus:ring-2"
                 >
-                  ⬇️
-                </a>
+                  {isDownloading ? (
+                    <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  )}
+                </button>
               </div>
             )}
             
@@ -559,8 +695,6 @@ function App() {
       </div>
     );
   };
-
-  // Mobile Navigation Component
   
   // Add TypingIndicator component
   const TypingIndicator = () => (
@@ -570,6 +704,151 @@ function App() {
       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
     </div>
   );
+
+  // Update emoji click handler
+  const handleEmojiClick = (emojiData, event) => {
+    console.log("Emoji clicked:", emojiData); // For debugging
+    
+    const emoji = emojiData.emoji;
+    const input = inputRef.current;
+    
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const beforeCursor = message.slice(0, start);
+      const afterCursor = message.slice(end);
+      const newMessage = beforeCursor + emoji + afterCursor;
+      
+      setMessage(newMessage);
+      
+      // Set cursor position after the inserted emoji
+      setTimeout(() => {
+        const newPosition = start + emoji.length;
+        input.focus();
+        input.setSelectionRange(newPosition, newPosition);
+      }, 10);
+    } else {
+      // Fallback if input ref not available
+      setMessage(prevMessage => prevMessage + emoji);
+    }
+  };
+
+  // Add Online Status Indicator component
+  const OnlineStatusIndicator = ({ isOnline }) => (
+    <div className={`
+      w-3 h-3 rounded-full 
+      ${isOnline ? 'bg-green-500' : 'bg-gray-400'}
+      absolute bottom-0 right-0 
+      border-2 border-white
+    `} />
+  );
+
+  const ReadReceipt = ({ status }) => {
+    let icon = '✓'; // Single check for sent
+    let color = 'text-gray-400';
+  
+    if (status === 'delivered') {
+      icon = '✓✓'; // Double check for delivered
+      color = 'text-gray-400';
+    } else if (status === 'read') {
+      icon = '✓✓'; // Double check in blue for read
+      color = 'text-blue-500';
+    }
+  
+    return (
+      <span className={`text-xs ${color} ml-1`}>
+        {icon}
+      </span>
+    );
+  };
+
+  // Add read receipt handling
+  useEffect(() => {
+    if (!userId) return;
+
+    // Listen for read receipts
+    socket.on('messages_read', ({ roomId, userId: readByUserId, messageIds, readAt }) => {
+      setMessageStatuses(prev => {
+        const newStatuses = { ...prev };
+        messageIds.forEach(messageId => {
+          newStatuses[messageId] = {
+            ...newStatuses[messageId],
+            read: true,
+            readAt: readAt
+          };
+        });
+        return newStatuses;
+      });
+    });
+
+    // Fetch initial unread counts
+    fetchUnreadCounts();
+
+    return () => {
+      socket.off('messages_read');
+    };
+  }, [userId]);
+
+  // Add function to fetch unread counts
+  const fetchUnreadCounts = async () => {
+    try {
+      const response = await axios.get(`http://localhost:3001/api/messages/unread/${userId}`);
+      const counts = {};
+      response.data.forEach(item => {
+        counts[item.room_id] = parseInt(item.count);
+      });
+      setUnreadCounts(counts);
+    } catch (error) {
+      console.error('Error fetching unread counts:', error);
+    }
+  };
+
+  // Add function to mark messages as read
+  const markMessagesAsRead = async (roomId) => {
+    if (!activeRoom) return;
+
+    const unreadMessages = messages
+      .filter(msg => msg.user_id !== userId && !msg.read)
+      .map(msg => msg.id);
+
+    if (unreadMessages.length === 0) return;
+
+    try {
+      await axios.post('http://localhost:3001/api/messages/read', {
+        roomId,
+        userId,
+        messageIds: unreadMessages
+      });
+
+      // Update local message statuses
+      setMessageStatuses(prev => {
+        const newStatuses = { ...prev };
+        unreadMessages.forEach(messageId => {
+          newStatuses[messageId] = {
+            ...newStatuses[messageId],
+            read: true,
+            readAt: new Date()
+          };
+        });
+        return newStatuses;
+      });
+
+      // Update unread counts
+      setUnreadCounts(prev => ({
+        ...prev,
+        [roomId]: 0
+      }));
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
+  // Update message viewing logic
+  useEffect(() => {
+    if (activeRoom) {
+      markMessagesAsRead(activeRoom.id);
+    }
+  }, [activeRoom, messages]);
 
   if (!userId) {
     return (
@@ -690,12 +969,24 @@ function App() {
                   className={`px-3 py-2 cursor-pointer hover:bg-[#e1e1e1] flex items-center space-x-3
                     ${activeRoom?.otherUser?.id === user.id ? 'bg-[#e1e1e1]' : ''}`}
                 >
-                  <div className="w-10 h-10 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
-                    {user.username[0].toUpperCase()}
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
+                      {user.username[0].toUpperCase()}
+                    </div>
+                    <OnlineStatusIndicator isOnline={onlineUsers.has(user.id)} />
+                    {unreadCounts[user.id] > 0 && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
+                        {unreadCounts[user.id]}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                      <h3 className="font-semibold truncate">{user.username}</h3>
+                      <h3 className="font-semibold truncate">{user.username}
+                        <span className="ml-2 text-xs text-gray-500">
+                          {onlineUsers.has(user.id) ? 'online' : 'offline'}
+                        </span>
+                      </h3>
                       <span className="text-xs text-gray-500">
                         {formatTime(new Date())}
                       </span>
@@ -711,7 +1002,7 @@ function App() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col bg-white ${
+      <div className={`flex-1 flex flex-col bg-white relative ${
         isMobile && showSidebar ? 'hidden' : 'flex'
       }`}>
         {activeRoom ? (
@@ -720,30 +1011,42 @@ function App() {
             <div className="h-14 border-b flex items-center justify-between px-4">
               <div className="flex items-center space-x-3">
               {isMobile && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4">
-                  <button 
-                    onClick={() => setShowSidebar(true)}
-                    className="p-3 text-gray-600 hover:text-[#464775]"
-                  >
-                    <MessageSquare size={24} />
-                  </button>
-                  <button 
-                    onClick={handleLogout}
-                    className="p-3 text-gray-600 hover:text-[#464775]"
-                  >
-                    <Settings size={24} />
-                  </button>
+                  <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4 z-50">
+                    <button 
+                      onClick={() => setShowSidebar(true)}
+                      className="p-3 text-gray-600 hover:text-[#464775] focus:outline-none focus:ring-2"
+                    >
+                      <MessageSquare size={24} />
+                    </button>
+                    <button 
+                      onClick={handleLogout}
+                      className="p-3 text-gray-600 hover:text-[#464775] focus:outline-none focus:ring-2"
+                    >
+                      <Settings size={24} />
+                    </button>
+                  </div>
+                )}
+                <div className="relative">
+                  <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
+                    {activeRoom.otherUser.username[0].toUpperCase()}
+                  </div>
+                  <OnlineStatusIndicator isOnline={onlineUsers.has(activeRoom.otherUser.id)} />
                 </div>
-              )}
-                <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
-                  {activeRoom.otherUser.username[0].toUpperCase()}
+                <div>
+                  <h2 className="font-semibold">{activeRoom.otherUser.username}</h2>
+                  <span className="text-xs text-gray-500">
+                    {onlineUsers.has(activeRoom.otherUser.id) ? 'online' : 'offline'}
+                  </span>
                 </div>
-                <h2 className="font-semibold">{activeRoom.otherUser.username}</h2>
               </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-4 pb-20 lg:pb-4">
+            {/* <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-4 pb-20 lg:pb-4"> */}
+            <div className={`
+              flex-1 overflow-y-auto p-3 lg:p-4 space-y-4
+              ${isMobile ? 'pb-7' : 'pb-6'} // Increase bottom padding on mobile
+            `}>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -782,7 +1085,11 @@ function App() {
               {messages.map((msg, index) => (
                 <div key={index}>
                   {msg.messageType === 'file' ? (
-                    <FileMessage msg={msg} isOwn={msg.user_id === userId} />
+                    <FileMessage 
+                      msg={msg} 
+                      isOwn={msg.user_id === userId} 
+                      readStatus={messageStatuses[msg.id]}
+                    />
                   ) : (
                     <div
                       className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'}`}
@@ -805,9 +1112,16 @@ function App() {
                           </div>
                         )}
                         <p className="text-sm">{msg.content}</p>
-                        <p className="text-xs mt-1 opacity-70">
+                        <div className="text-xs mt-1 opacity-70 flex items-center justify-end space-x-1">
+                        <span>{formatTime(msg.created_at)}</span>
+                        {msg.user_id === userId && (
+                          <ReadReceipt status={messageStatuses[msg.id]?.read ? 'read' : 
+                                            messageStatuses[msg.id]?.delivered ? 'delivered' : 'sent'} />
+                        )}
+                      </div>
+                        {/* <p className="text-xs mt-1 opacity-70">
                           {formatTime(msg.created_at)}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
                   )}
@@ -827,70 +1141,109 @@ function App() {
             </div>
 
             {/* Message Input */}
-            <div className="border-t p-2 lg:p-4 bg-white">
-              <div className="bg-[#f0f0f0] rounded-lg p-2">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="relative">
-                    <button 
-                      type="button"
-                      className="p-2 hover:bg-gray-200 rounded"
-                      onClick={() => setShowAttachmentOptions(!showAttachmentOptions)}
-                    >
-                      <Paperclip size={20} className="text-gray-600" />
-                    </button>
-                    {showAttachmentOptions && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg py-2">
-                        <button
-                          type="button"
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                          onClick={() => handleAttachment('image')}
-                        >
-                          <ImageIcon size={16} />
-                          <span>Image</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                          onClick={() => handleAttachment('file')}
-                        >
-                          <File size={16} />
-                          <span>File</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+            <div className="border-t p-2 lg:p-4 bg-white relative">
+              <div className={`
+              bg-[#f0f0f0] rounded-lg p-2
+              ${isMobile ? 'mb-16' : ''} // Add margin bottom on mobile to account for nav bar
+            `}>
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="relative">
+                  <button 
+                    type="button"
+                    className="p-2 hover:bg-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-[#464775]"
+                    onClick={() => setShowAttachmentOptions(!showAttachmentOptions)}
+                  >
+                    <Paperclip size={20} className="text-gray-600" />
+                  </button>
+                  {showAttachmentOptions && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg py-2 z-50">
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                        onClick={() => handleAttachment('image')}
+                      >
+                        <ImageIcon size={16} />
+                        <span>Image</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                        onClick={() => handleAttachment('file')}
+                      >
+                        <File size={16} />
+                        <span>File</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={message}
-                    onChange={handleMessageChange}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                    placeholder="Type a new message"
-                    className="flex-1 bg-transparent outline-none text-sm"
-                  />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={handleMessageChange}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  placeholder="Type a new message"
+                  className="flex-1 bg-transparent outline-none text-sm p-2 rounded"
+                />
+
+                {/* Emoji Button and Picker */}
+                <div className="relative" ref={emojiPickerRef}>
                   <button 
                     type="button"
                     className="p-2 hover:bg-gray-200 rounded"
+                    onClick={() => setShowEmoji(!showEmoji)}
                   >
                     <Smile size={20} className="text-gray-600" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={sendMessage}
-                    disabled={!message.trim()}
-                    className="p-2 hover:bg-gray-200 rounded disabled:opacity-50"
-                  >
-                    <Send size={20} className="text-[#464775]" />
-                  </button>
+                  
+                  {showEmoji && (
+                    <div className="absolute bottom-full right-0 mb-2">
+                      <div className="relative bg-white rounded-lg shadow-lg">
+                        <button
+                          className="absolute right-2 top-2 p-1 hover:bg-gray-100 rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowEmoji(false);
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                        <EmojiPicker
+                          onEmojiClick={handleEmojiClick}
+                          autoFocusSearch={false}
+                          searchDisabled
+                          skinTonesDisabled
+                          height={350}
+                          width={280}
+                          previewConfig={{
+                            showPreview: false
+                          }}
+                          lazyLoadEmojis={true}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+                <button
+                  type="button"
+                  onClick={sendMessage}
+                  disabled={!message.trim()}
+                  className={`
+                    p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#464775]
+                    ${message.trim() ? 'hover:bg-gray-200' : 'opacity-50 cursor-not-allowed'}
+                  `}
+                >
+                  <Send size={20} className="text-[#464775]" />
+                </button>
               </div>
             </div>
+          </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50">

@@ -262,3 +262,25 @@ body {
     background: rgba(0, 0, 0, 0.7);
     transform: scale(1.1);
   }
+
+/* Add to your global CSS or Tailwind config */
+.emoji-picker-react {
+  position: absolute !important;
+  bottom: 100% !important;
+  right: 0 !important;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1) !important;
+  border-radius: 0.5rem !important;
+}
+
+.emoji-scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.emoji-scroll-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.emoji-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}

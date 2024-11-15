@@ -21,8 +21,30 @@ module.exports = {
         },
         animation: {
           'bounce-slow': 'bounce 3s linear infinite',
-        }
+          'spin-slow': 'spin 3s linear infinite',
+        },
+        zIndex: {
+          '60': '60',
+          '70': '70',
+        },
+        spacing: {
+          '18': '4.5rem',
+          '22': '5.5rem',
+          '32': '8rem',
+        },
+        keyframes: {
+          spin: {
+            '0%': { transform: 'rotate(0deg)' },
+            '100%': { transform: 'rotate(360deg)' },
+          }
+        },
       },
     },
     plugins: [],
+    variants: {
+      extend: {
+        opacity: ['group-hover'],
+        display: ['group-hover'],
+      },
+    },
 }

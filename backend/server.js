@@ -17,6 +17,10 @@ const io = new Server(server, {
 
 // Store typing status in memory
 const typingUsers = new Map();
+// Track online users
+const onlineUsers = new Map(); 
+// Store messages with read status
+const messages = new Map(); 
 
 // PostgreSQL connection
 const pool = new Pool({
@@ -30,9 +34,22 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
+
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
+    // Handle user online status
+    socket.on('user_online', (userId) => {
+        onlineUsers.set(userId, true);
+        io.emit('user_status_change', { userId, online: true });
+    });
+
+    socket.on('user_offline', (userId) => {
+        onlineUsers.delete(userId);
+        io.emit('user_status_change', { userId, online: false });
+    });
   
     socket.on('user_connected', (userId) => {
       socket.userId = userId;
@@ -78,10 +95,18 @@ io.on('connection', (socket) => {
     });
   
     socket.on('disconnect', () => {
-      if (socket.userId) {
-        io.emit('user_disconnected');
-      }
-      console.log('User disconnected:', socket.id);
+         // Find and remove disconnected user
+        for (const [userId, socketId] of onlineUsers.entries()) {
+            if (socketId === socket.id) {
+            onlineUsers.delete(userId);
+            io.emit('user_status_change', { userId, online: false });
+            break;
+            }
+        }
+        if (socket.userId) {
+            io.emit('user_disconnected');
+        }
+        console.log('User disconnected:', socket.id);
     });
 });
 
@@ -345,6 +370,54 @@ app.post('/api/messages', (req, res) => {
   
     res.json(message);
 });
+
+// Add API endpoint to get online users
+app.get('/api/users/online', (req, res) => {
+    const onlineUserIds = Array.from(onlineUsers.keys());
+    res.json(onlineUserIds);
+});
+
+// Update message read status
+app.post('/api/messages/read', async (req, res) => {
+    const { roomId, userId, messageIds } = req.body;
+    
+    try {
+      // Update read status in database
+      await pool.query(
+        'UPDATE messages SET read = true, read_at = NOW() WHERE id = ANY($1) AND user_id != $2',
+        [messageIds, userId]
+      );
+  
+      // Emit read receipt event
+      io.to(roomId).emit('messages_read', {
+        roomId,
+        userId,
+        messageIds,
+        readAt: new Date()
+      });
+  
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ error: 'Failed to update read status' });
+    }
+  });
+
+  // Get unread messages count
+app.get('/api/messages/unread/:userId', async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+      const result = await pool.query(
+        'SELECT room_id, COUNT(*) as count FROM messages WHERE user_id != $1 AND read = false GROUP BY room_id',
+        [userId]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error getting unread count:', error);
+      res.status(500).json({ error: 'Failed to get unread count' });
+    }
+  });
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
