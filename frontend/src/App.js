@@ -69,6 +69,10 @@ function App() {
   const [unreadCounts, setUnreadCounts] = useState({});
   const [messageStatuses, setMessageStatuses] = useState({});
 
+
+  // Add these new states at the top of your App component
+  const [pinnedChats, setPinnedChats] = useState(new Set());
+
   // Functions
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
@@ -850,6 +854,69 @@ function App() {
     }
   }, [activeRoom, messages]);
 
+  // Add new function to handle pin/unpin chats
+  const handlePinChat = (user, e) => {
+    e.stopPropagation(); // Prevent chat selection when pinning
+    const isPinned = pinnedChats.has(user.id);
+    
+    if (isPinned) {
+      const newPinnedChats = new Set(pinnedChats);
+      newPinnedChats.delete(user.id);
+      setPinnedChats(newPinnedChats);
+      localStorage.setItem('pinnedChats', JSON.stringify([...newPinnedChats]));
+    } else {
+      const newPinnedChats = new Set([...pinnedChats, user.id]);
+      setPinnedChats(newPinnedChats);
+      localStorage.setItem('pinnedChats', JSON.stringify([...newPinnedChats]));
+    }
+  };
+
+  // Add useEffect to load pinned chats from localStorage
+  useEffect(() => {
+    const savedPinnedChats = localStorage.getItem('pinnedChats');
+    if (savedPinnedChats) {
+      setPinnedChats(new Set(JSON.parse(savedPinnedChats)));
+    }
+  }, []);
+
+  // Add this helper function to sort users
+  const sortUsers = (users) => {
+    return [...users].sort((a, b) => {
+      // First sort by pinned status
+      if (pinnedChats.has(a.id) && !pinnedChats.has(b.id)) return -1;
+      if (!pinnedChats.has(a.id) && pinnedChats.has(b.id)) return 1;
+      // Then sort by username
+      return a.username.localeCompare(b.username);
+    });
+  };
+
+  const PinIcon = ({ isPinned, onClick }) => (
+    <button
+      onClick={onClick}
+      className={`
+        p-1.5 rounded-full hover:bg-gray-200 transition-all
+        ${isPinned ? 'text-[#464775]' : 'text-gray-400'}
+        opacity-0 group-hover:opacity-100
+      `}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill={isPinned ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <line x1="12" y1="17" x2="12" y2="3" />
+        <path d="M5 17h14v2H5z" />
+        <path d="M15 7H9v8h6V7z" />
+      </svg>
+    </button>
+  );
+
   if (!userId) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f5f5f5] p-4">
@@ -944,9 +1011,11 @@ function App() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="px-3 py-2 text-sm font-semibold text-gray-600">
-            Chats
-          </div>
+          {pinnedChats.size > 0 && (
+            <div className="px-3 py-2 text-sm font-semibold text-gray-600">
+              Pinned Chats
+            </div>
+          )}
           {error ? (
             <div className="p-4 text-center text-red-500">
               Failed to load users. Please try again.
@@ -960,43 +1029,62 @@ function App() {
               No users found
             </div>
           ) : (
-            users
-              .filter(user => user.username.toLowerCase().includes(searchTerm.toLowerCase()))
-              .map((user) => (
-                <div
-                  key={user.id}
-                  onClick={() => startChat(user)}
-                  className={`px-3 py-2 cursor-pointer hover:bg-[#e1e1e1] flex items-center space-x-3
-                    ${activeRoom?.otherUser?.id === user.id ? 'bg-[#e1e1e1]' : ''}`}
-                >
-                  <div className="relative">
-                    <div className="w-10 h-10 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
-                      {user.username[0].toUpperCase()}
-                    </div>
-                    <OnlineStatusIndicator isOnline={onlineUsers.has(user.id)} />
-                    {unreadCounts[user.id] > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
-                        {unreadCounts[user.id]}
+            <>
+              {sortUsers(users.filter(user => 
+                user.username.toLowerCase().includes(searchTerm.toLowerCase())
+              )).map((user) => {
+                const isPinned = pinnedChats.has(user.id);
+                
+                return (
+                  <div
+                    key={user.id}
+                    className={`group px-3 py-2 cursor-pointer hover:bg-[#e1e1e1] flex items-center space-x-3
+                      ${activeRoom?.otherUser?.id === user.id ? 'bg-[#e1e1e1]' : ''}
+                      ${isPinned ? 'border-l-2 border-[#464775]' : ''}
+                    `}
+                  >
+                    <div className="relative flex-1 flex items-center space-x-3" onClick={() => startChat(user)}>
+                      <div className="relative">
+                        <div className="w-10 h-10 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
+                          {user.username[0].toUpperCase()}
+                        </div>
+                        <OnlineStatusIndicator isOnline={onlineUsers.has(user.id)} />
+                        {unreadCounts[user.id] > 0 && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
+                            {unreadCounts[user.id]}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold truncate">{user.username}
-                        <span className="ml-2 text-xs text-gray-500">
-                          {onlineUsers.has(user.id) ? 'online' : 'offline'}
-                        </span>
-                      </h3>
-                      <span className="text-xs text-gray-500">
-                        {formatTime(new Date())}
-                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-semibold truncate">
+                            {user.username}
+                            {isPinned && (
+                              <span className="ml-2 text-xs text-[#464775]">
+                                📌 Pinned
+                              </span>
+                            )}
+                            <span className="ml-2 text-xs text-gray-500">
+                              {onlineUsers.has(user.id) ? 'online' : 'offline'}
+                            </span>
+                          </h3>
+                          <span className="text-xs text-gray-500">
+                            {formatTime(new Date())}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 truncate">
+                          Click to start chatting
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500 truncate">
-                      Click to start chatting
-                    </p>
+                    <PinIcon 
+                      isPinned={isPinned}
+                      onClick={(e) => handlePinChat(user, e)}
+                    />
                   </div>
-                </div>
-              ))
+                );
+              })}
+            </>
           )}
         </div>
       </div>

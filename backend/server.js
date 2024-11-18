@@ -234,7 +234,6 @@ app.post('/api/admin/reset-sequence', async (req, res) => {
 });
 
 // Configure multer for file upload
-
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, 'uploads/')
@@ -300,6 +299,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 // Test route to verify server is running
 app.get('/', (req, res) => {
     res.json({ message: 'Server is running!' });
+    
 });
   
 // Typing status endpoint
@@ -418,6 +418,58 @@ app.get('/api/messages/unread/:userId', async (req, res) => {
       res.status(500).json({ error: 'Failed to get unread count' });
     }
   });
+
+  // Add pin chat endpoint
+app.post('/api/chats/pin', async (req, res) => {
+  const { userId, roomId } = req.body;
+  
+  try {
+    await pool.query(
+      'INSERT INTO pinned_chats (user_id, room_id) VALUES ($1, $2) ON CONFLICT (user_id, room_id) DO NOTHING',
+      [userId, roomId]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add unpin chat endpoint
+app.delete('/api/chats/pin', async (req, res) => {
+  const { userId, roomId } = req.body;
+  
+  try {
+    await pool.query(
+      'DELETE FROM pinned_chats WHERE user_id = $1 AND room_id = $2',
+      [userId, roomId]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get pinned chats endpoint
+app.get('/api/chats/pin/:userId', async (req, res) => {
+  const { userId } = req.params;
+  
+  try {
+    const result = await pool.query(
+      `SELECT pc.*, cr.*, u.username as other_user_name 
+       FROM pinned_chats pc
+       JOIN chat_rooms cr ON pc.room_id = cr.id
+       JOIN chat_participants cp ON cr.id = cp.room_id
+       JOIN users u ON cp.user_id = u.id
+       WHERE pc.user_id = $1 AND cp.user_id != $1
+       ORDER BY pc.pinned_at DESC`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
