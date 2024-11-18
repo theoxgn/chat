@@ -13,7 +13,7 @@ Attachment image - video
 
 # Getting Started
 
-###Clone the Repository:
+### Clone the Repository:
 Bash
 git clone https://github.com/theoxgn/chat.git
 Use code with caution.
@@ -71,7 +71,7 @@ Frontend: React
 Backend: Node.js, Express.js
 Database: PostgreSQL
 
-#Contributing
+# Contributing
 Fork the repository.
 Create a new branch.
 Make your changes.
