@@ -14,10 +14,8 @@ import {
   X
 } from 'lucide-react';
 
-// Initialize socket connection
 const socket = io('http://localhost:3001');
 
-// Utility Functions
 const formatTime = (date) => {
   if (!date) return '';
   return new Date(date).toLocaleTimeString([], { 
@@ -27,191 +25,60 @@ const formatTime = (date) => {
   });
 };
 
-const formatFileSize = (bytes) => {
-  if (!bytes) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-};
-
-const getFileIcon = (fileType) => {
-  if (fileType?.startsWith('image/')) return '🖼️';
-  if (fileType?.startsWith('video/')) return '🎥';
-  if (fileType?.startsWith('audio/')) return '🎵';
-  if (fileType?.includes('pdf')) return '📄';
-  if (fileType?.includes('word')) return '📝';
-  if (fileType?.includes('excel') || fileType?.includes('spreadsheet')) return '📊';
-  return '📁';
-};
-
 function App() {
-  // User States
+  // States
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState(null);
-
-  // Chat States
   const [activeRoom, setActiveRoom] = useState(null);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [pinnedChats, setPinnedChats] = useState(new Set());
-
-  // UI States
   const [loading, setLoading] = useState(false);
+  const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  const [showEmoji, setShowEmoji] = useState(false);
-
-  // File States
   const [preview, setPreview] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Chat Feature States
-  const [isTyping, setIsTyping] = useState(false);
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState(null);
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
-  const [unreadCounts, setUnreadCounts] = useState({});
-  const [messageStatuses, setMessageStatuses] = useState({});
+  // New states for responsive design
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Refs
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // emoji picker
+  const [showEmoji, setShowEmoji] = useState(false);
   const inputRef = useRef(null);
   const emojiPickerRef = useRef(null);
 
-  // Scroll to bottom helper
+  // Add typing states
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false); // Replace typingUsers
+  const [typingTimeout, setTypingTimeout] = useState(null);
+
+  // Add new state for online users
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [messageStatuses, setMessageStatuses] = useState({});
+
+  //reply
+  const [replyingTo, setReplyingTo] = useState(null);
+
+  // Add these new states at the top of your App component
+  const [pinnedChats, setPinnedChats] = useState(new Set());
+
+  // Functions
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, []);
-
-  // Effects
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-
-  // Mobile check effect
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
-        setShowSidebar(true);
-      }
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Fetch users callback
-  const fetchUsers = useCallback(async () => {
-    if (!userId) return;
-    
-    setUsersLoading(true);
-    try {
-      const response = await axios.get('http://localhost:3001/api/users');
-      setUsers(response.data.filter(user => user.id !== userId));
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setError(error.message);
-    } finally {
-      setUsersLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (userId) {
-      fetchUsers();
-    }
-  }, [userId, fetchUsers]);
-
-  useEffect(() => {
-    if (!activeRoom) return;
-  
-    const pollTypingStatus = setInterval(async () => {
-      try {
-        const response = await fetch(`http://localhost:3001/api/typing/${activeRoom.id}`);
-        const data = await response.json();
-        setOtherUserTyping(data.typingUsers.includes(activeRoom.otherUser.id));
-      } catch (error) {
-        console.error('Error polling typing status:', error);
-      }
-    }, 1000);
-  
-    return () => clearInterval(pollTypingStatus);
-  }, [activeRoom]);
-
-  // Socket connection effect
-  useEffect(() => {
-    if (!userId) return;
-
-    socket.emit('user_online', userId);
-
-    socket.on('user_status_change', ({ userId, online }) => {
-      setOnlineUsers(prev => {
-        const newSet = new Set(prev);
-        if (online) {
-          newSet.add(userId);
-        } else {
-          newSet.delete(userId);
-        }
-        return newSet;
-      });
-    });
-
-    fetch('http://localhost:3001/api/users/online')
-      .then(res => res.json())
-      .then(onlineUserIds => {
-        setOnlineUsers(new Set(onlineUserIds));
-      });
-
-    return () => {
-      socket.emit('user_offline', userId);
-      socket.off('user_status_change');
-    };
-  }, [userId]);
-
-  // Fetch users effect
-  useEffect(() => {
-    const savedUser = localStorage.getItem('chatUser');
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-      setUserId(user.id);
-      setUsername(user.username);
-    }
-
-    socket.on('receive_message', (message) => {
-      setMessages((prev) => [...prev, message]);
-      scrollToBottom();
-    });
-
-    socket.on('user_connected', fetchUsers);
-    socket.on('user_disconnected', fetchUsers);
-
-    return () => {
-      socket.off('receive_message');
-      socket.off('user_connected');
-      socket.off('user_disconnected');
-    };
-  }, [fetchUsers, scrollToBottom]);
-
-  
-
-  // Message handling functions
-  const handleMessageChange = (e) => {
-    setMessage(e.target.value);
-    handleTypingStart();
-  };
 
   const handleTypingStart = () => {
     if (!activeRoom) return;
@@ -247,14 +114,267 @@ function App() {
     }
   };
 
+  // Modify your message input handling
+  const handleMessageChange = (e) => {
+    setMessage(e.target.value);
+    handleTypingStart();
+  };
+
+  // Check for mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setShowSidebar(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Click Outside Handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmoji(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup emoji picker when component unmounts
+  useEffect(() => {
+    return () => {
+      setShowEmoji(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+  
+    // Emit online status when user logs in
+    socket.emit('user_online', userId);
+  
+    // Listen for user status changes
+    socket.on('user_status_change', ({ userId, online }) => {
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        if (online) {
+          newSet.add(userId);
+        } else {
+          newSet.delete(userId);
+        }
+        return newSet;
+      });
+    });
+  
+    // Fetch initial online users
+    fetch('http://localhost:3001/api/users/online')
+      .then(res => res.json())
+      .then(onlineUserIds => {
+        setOnlineUsers(new Set(onlineUserIds));
+      });
+  
+    // Cleanup
+    return () => {
+      socket.emit('user_offline', userId);
+      socket.off('user_status_change');
+    };
+  }, [userId]);
+
+  
+
+  const fetchUsers = useCallback(async () => {
+    if (!userId) return;
+    
+    setUsersLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.get('http://localhost:3001/api/users');
+      setUsers(response.data.filter(user => user.id !== userId));
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setError(error.message);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [userId]);
+
+  // Effects
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('chatUser');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setUserId(user.id);
+      setUsername(user.username);
+    }
+
+    socket.on('receive_message', (message) => {
+      setMessages((prev) => [...prev, message]);
+    });
+
+    socket.on('user_connected', () => {
+      fetchUsers();
+    });
+
+    socket.on('user_disconnected', () => {
+      fetchUsers();
+    });
+
+    return () => {
+      socket.off('receive_message');
+      socket.off('user_connected');
+      socket.off('user_disconnected');
+    };
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchUsers();
+    }
+  }, [userId, fetchUsers]);
+  
+  useEffect(() => {
+    if (!activeRoom) return;
+  
+    const pollTypingStatus = setInterval(async () => {
+      try {
+        const response = await fetch(`http://localhost:3001/api/typing/${activeRoom.id}`);
+        const data = await response.json();
+        setOtherUserTyping(data.typingUsers.includes(activeRoom.otherUser.id));
+      } catch (error) {
+        console.error('Error polling typing status:', error);
+      }
+    }, 1000);
+  
+    return () => clearInterval(pollTypingStatus);
+  }, [activeRoom]);
+
+  const handleLogin = async () => {
+    if (!username.trim()) {
+      alert('Please enter a username');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post('http://localhost:3001/api/users', {
+        username: username.trim()
+      });
+
+      setUserId(response.data.id);
+      setUsername(response.data.username);
+      localStorage.setItem('chatUser', JSON.stringify(response.data));
+      socket.emit('user_connected', response.data.id);
+    } catch (error) {
+      console.error('Error logging in:', error);
+      alert('Error logging in. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  const handleLogout = () => {
+    socket.emit('user_offline', userId);
+    socket.emit('user_disconnected', userId);
+    setUserId(null);
+    setUsername('');
+    setActiveRoom(null);
+    setMessages([]);
+    localStorage.removeItem('chatUser');
+  };
+
+  const startChat = async (otherUser) => {
+    try {
+      const response = await axios.post('http://localhost:3001/api/rooms', {
+        user1Id: userId,
+        user2Id: otherUser.id
+      });
+
+      const roomId = response.data.id;
+      setActiveRoom({ ...response.data, otherUser });
+      
+      socket.emit('join_room', { userId, roomId });
+      
+      const messagesResponse = await axios.get(`http://localhost:3001/api/messages/${roomId}`);
+      setMessages(messagesResponse.data);
+
+      if (isMobile) {
+        setShowSidebar(false);
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+    }
+  };
+
+  // Add function to mark messages as read
+  const markMessagesAsRead = useCallback(async (roomId) => {
+    if (!activeRoom) return;
+
+    const unreadMessages = messages
+      .filter(msg => msg.user_id !== userId && !msg.read)
+      .map(msg => msg.id);
+
+    if (unreadMessages.length === 0) return;
+
+    try {
+      await axios.post('http://localhost:3001/api/messages/read', {
+        roomId,
+        userId,
+        messageIds: unreadMessages
+      });
+
+      // Update local message statuses
+      setMessageStatuses(prev => {
+        const newStatuses = { ...prev };
+        unreadMessages.forEach(messageId => {
+          newStatuses[messageId] = {
+            ...newStatuses[messageId],
+            read: true,
+            readAt: new Date()
+          };
+        });
+        return newStatuses;
+      });
+
+      // Update unread counts
+      setUnreadCounts(prev => ({
+        ...prev,
+        [roomId]: 0
+      }));
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  }, [activeRoom, messages, userId]); // Add dependencies here
+
   const sendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!message.trim() || !activeRoom) return;
 
-    setMessage('');
-    setShowEmoji(false);
+    setMessage(''); // Clear input
+    setShowEmoji(false); // Close emoji picker
     clearTimeout(typingTimeout);
+    
     setIsTyping(false);
+    fetch('http://localhost:3001/api/typing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roomId: activeRoom.id,
+        userId: userId,
+        typing: false
+      })
+    });
 
     const messageData = {
       roomId: activeRoom.id,
@@ -271,11 +391,199 @@ function App() {
 
     try {
       const response = await axios.post('http://localhost:3001/api/messages', messageData);
-      socket.emit('send_message', { ...messageData, id: response.data.id });
-      setReplyingTo(null);
+      const messageId = response.data.id;
+  
+      // Update message statuses
+      setMessageStatuses(prev => ({
+        ...prev,
+        [messageId]: {
+          sent: true,
+          delivered: false,
+          read: false
+        }
+      }));
+  
+      socket.emit('send_message', { ...messageData, id: messageId });
+      setMessage('');
+      setReplyingTo(null); // Clear reply state after sending
     } catch (error) {
       console.error('Error sending message:', error);
     }
+  };
+
+  const handleAttachment = (type) => {
+    setShowAttachmentOptions(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };  
+
+  // Function to format file size
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  };
+
+  // Function to get file icon based on type
+  const getFileIcon = (fileType) => {
+    if (fileType.startsWith('image/')) return '🖼️';
+    if (fileType.startsWith('video/')) return '🎥';
+    if (fileType.startsWith('audio/')) return '🎵';
+    if (fileType.includes('pdf')) return '📄';
+    if (fileType.includes('word')) return '📝';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
+    return '📁';
+  };
+
+  const handleFileUpload = async (file) => {
+    if (!file || !activeRoom) return;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+  
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('roomId', activeRoom.id);
+    formData.append('userId', userId);
+    formData.append('filename', file.name);
+  
+    try {
+      const uploadResponse = await axios.post(
+        'http://localhost:3001/api/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(progress);
+          }
+        }
+      );
+  
+      const fileMessage = {
+        roomId: activeRoom.id,
+        userId: userId,
+        content: 'Sent a file: ' + file.name,
+        fileUrl: uploadResponse.data.fileUrl,
+        fileName: file.name,
+        fileType: getFileIcon(file.type),
+        fileSize: file.size,
+        messageType: 'file'
+      };
+      console.log(fileMessage)
+      socket.emit('send_message', fileMessage);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };  
+
+  const FilePreview = ({ file, onClose, onUpload }) => {
+    const isImage = file?.type.startsWith('image/');
+    const isPDF = file?.type === 'application/pdf';
+    const isVideo = file?.type.startsWith('video/');
+  
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg max-w-2xl w-full">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="font-semibold">File Preview</h3>
+            <button 
+              onClick={onClose}
+              className="p-1 hover:bg-gray-100 rounded-full"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="p-4">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="text-3xl">
+                {isImage ? '🖼️' : isPDF ? '📄' : isVideo ? '🎥' : '📁'}
+              </div>
+              <div>
+                <div className="font-medium">{file.name}</div>
+                <div className="text-sm text-gray-500">
+                  {(file.size / (1024 * 1024)).toFixed(2)} MB
+                </div>
+              </div>
+            </div>
+  
+            <div className="border rounded-lg p-4 bg-gray-50 mb-4">
+              {isImage && (
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={file.name}
+                  className="max-w-full h-auto rounded"
+                />
+              )}
+              {isPDF && (
+                <iframe
+                  src={URL.createObjectURL(file)}
+                  title={file.name}
+                  className="w-full h-96 rounded"
+                />
+              )}
+              {isVideo && (
+                <video
+                  src={URL.createObjectURL(file)}
+                  controls
+                  className="w-full rounded"
+                />
+              )}
+              {!isImage && !isPDF && !isVideo && (
+                <div className="text-center py-8 text-gray-500">
+                  Preview not available for this file type
+                </div>
+              )}
+            </div>
+  
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onUpload}
+                className="px-4 py-2 bg-[#176cf7] text-white rounded-lg hover:bg-[#002D84]"
+              >
+                Send File
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add this component for upload progress
+  const UploadProgress = ({ progress }) => {
+    return (
+      <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 z-50">
+        <div className="mb-2 flex justify-between items-center">
+          <span className="text-sm font-medium">Uploading file...</span>
+          <span className="text-sm text-gray-500">{progress}%</span>
+        </div>
+        <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-[#176cf7] transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    );
   };
 
   const FileMessage = ({ msg, isOwn }) => {
@@ -328,13 +636,13 @@ function App() {
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
         {!isOwn && (
-          <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm mr-2">
+          <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
             {msg.username?.[0].toUpperCase()}
           </div>
         )}
         <div className={`
           max-w-[70%] rounded-lg p-3 
-          ${isOwn ? 'bg-[#464775] text-white' : 'bg-[#f0f0f0]'}
+          ${isOwn ? 'bg-[#176cf7] text-white' : 'bg-[#f0f0f0]'}
         `}>
           {!isOwn && (
             <div className="text-sm font-semibold mb-1">{msg.username}</div>
@@ -406,7 +714,7 @@ function App() {
                   {isDownloading && (
                     <div className="w-full h-1 bg-gray-200 rounded-full mt-1">
                       <div 
-                        className="h-full bg-[#464775] rounded-full transition-all duration-300"
+                        className="h-full bg-[#176cf7] rounded-full transition-all duration-300"
                         style={{ width: `${downloadProgress}%` }}
                       />
                     </div>
@@ -438,249 +746,6 @@ function App() {
     );
   };
   
-
-  // File handling functions
-  const handleFileUpload = async (file) => {
-    if (!file || !activeRoom) return;
-    
-    setIsUploading(true);
-    setUploadProgress(0);
-  
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('roomId', activeRoom.id);
-    formData.append('userId', userId);
-    formData.append('filename', file.name);
-  
-    try {
-      const uploadResponse = await axios.post(
-        'http://localhost:3001/api/upload',
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (progressEvent) => {
-            const progress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            setUploadProgress(progress);
-          }
-        }
-      );
-  
-      const fileMessage = {
-        roomId: activeRoom.id,
-        userId: userId,
-        content: 'Sent a file: ' + file.name,
-        fileUrl: uploadResponse.data.fileUrl,
-        fileName: file.name,
-        fileType: getFileIcon(file.type),
-        fileSize: file.size,
-        messageType: 'file'
-      };
-      
-      socket.emit('send_message', fileMessage);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Failed to upload file. Please try again.');
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
-  // Authentication functions
-  const handleLogin = async () => {
-    if (!username.trim()) {
-      alert('Please enter a username');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await axios.post('http://localhost:3001/api/users', {
-        username: username.trim()
-      });
-
-      setUserId(response.data.id);
-      setUsername(response.data.username);
-      localStorage.setItem('chatUser', JSON.stringify(response.data));
-      socket.emit('user_connected', response.data.id);
-    } catch (error) {
-      console.error('Error logging in:', error);
-      alert('Error logging in. Please try again.');
-    }
-    setLoading(false);
-  };
-
-  const handleLogout = () => {
-    socket.emit('user_offline', userId);
-    socket.emit('user_disconnected', userId);
-    setUserId(null);
-    setUsername('');
-    setActiveRoom(null);
-    setMessages([]);
-    localStorage.removeItem('chatUser');
-  };
-
-  // Chat functions
-  const startChat = async (otherUser) => {
-    try {
-      const response = await axios.post('http://localhost:3001/api/rooms', {
-        user1Id: userId,
-        user2Id: otherUser.id
-      });
-
-      const roomId = response.data.id;
-      setActiveRoom({ ...response.data, otherUser });
-      
-      socket.emit('join_room', { userId, roomId });
-      
-      const messagesResponse = await axios.get(`http://localhost:3001/api/messages/${roomId}`);
-      setMessages(messagesResponse.data);
-
-      if (isMobile) {
-        setShowSidebar(false);
-      }
-    } catch (error) {
-      console.error('Error starting chat:', error);
-    }
-  };
-
-  const handlePinChat = (user, e) => {
-    e.stopPropagation();
-    const isPinned = pinnedChats.has(user.id);
-    
-    const newPinnedChats = new Set(pinnedChats);
-    if (isPinned) {
-      newPinnedChats.delete(user.id);
-    } else {
-      newPinnedChats.add(user.id);
-    }
-    
-    setPinnedChats(newPinnedChats);
-    localStorage.setItem('pinnedChats', JSON.stringify([...newPinnedChats]));
-  };
-
-  // Emoji handling
-  const handleEmojiClick = (emojiData) => {
-    const emoji = emojiData.emoji;
-    const input = inputRef.current;
-    
-    if (input) {
-      const start = input.selectionStart || 0;
-      const end = input.selectionEnd || 0;
-      const newMessage = message.slice(0, start) + emoji + message.slice(end);
-      
-      setMessage(newMessage);
-      
-      setTimeout(() => {
-        const newPosition = start + emoji.length;
-        input.focus();
-        input.setSelectionRange(newPosition, newPosition);
-      }, 10);
-    } else {
-      setMessage(prevMessage => prevMessage + emoji);
-    }
-  };
-
-  const FilePreview = ({ file, onClose, onUpload }) => {
-    const isImage = file?.type.startsWith('image/');
-    const isPDF = file?.type === 'application/pdf';
-    const isVideo = file?.type.startsWith('video/');
-  
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg max-w-2xl w-full">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="font-semibold">File Preview</h3>
-            <button 
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-full"
-            >
-              ✕
-            </button>
-          </div>
-          
-          <div className="p-4">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="text-3xl">
-                {isImage ? '🖼️' : isPDF ? '📄' : isVideo ? '🎥' : '📁'}
-              </div>
-              <div>
-                <div className="font-medium">{file.name}</div>
-                <div className="text-sm text-gray-500">
-                  {(file.size / (1024 * 1024)).toFixed(2)} MB
-                </div>
-              </div>
-            </div>
-  
-            <div className="border rounded-lg p-4 bg-gray-50 mb-4">
-              {isImage && (
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  className="max-w-full h-auto rounded"
-                />
-              )}
-              {isPDF && (
-                <iframe
-                  src={URL.createObjectURL(file)}
-                  title={file.name}
-                  className="w-full h-96 rounded"
-                />
-              )}
-              {isVideo && (
-                <video
-                  src={URL.createObjectURL(file)}
-                  controls
-                  className="w-full rounded"
-                />
-              )}
-              {!isImage && !isPDF && !isVideo && (
-                <div className="text-center py-8 text-gray-500">
-                  Preview not available for this file type
-                </div>
-              )}
-            </div>
-  
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={onUpload}
-                className="px-4 py-2 bg-[#464775] text-white rounded-lg hover:bg-[#5c5c94]"
-              >
-                Send File
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Add this component for upload progress
-  const UploadProgress = ({ progress }) => {
-    return (
-      <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 z-50">
-        <div className="mb-2 flex justify-between items-center">
-          <span className="text-sm font-medium">Uploading file...</span>
-          <span className="text-sm text-gray-500">{progress}%</span>
-        </div>
-        <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-[#464775] transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-    );
-  };
-
   // Add TypingIndicator component
   const TypingIndicator = () => (
     <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 rounded-xl max-w-[100px]">
@@ -690,22 +755,32 @@ function App() {
     </div>
   );
 
-  const handleAttachment = (type) => {
-    setShowAttachmentOptions(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  // Update emoji click handler
+  const handleEmojiClick = (emojiData, event) => {
+    console.log("Emoji clicked:", emojiData); // For debugging
+    
+    const emoji = emojiData.emoji;
+    const input = inputRef.current;
+    
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const beforeCursor = message.slice(0, start);
+      const afterCursor = message.slice(end);
+      const newMessage = beforeCursor + emoji + afterCursor;
+      
+      setMessage(newMessage);
+      
+      // Set cursor position after the inserted emoji
+      setTimeout(() => {
+        const newPosition = start + emoji.length;
+        input.focus();
+        input.setSelectionRange(newPosition, newPosition);
+      }, 10);
+    } else {
+      // Fallback if input ref not available
+      setMessage(prevMessage => prevMessage + emoji);
     }
-  };  
-
-  // Add this helper function to sort users
-  const sortUsers = (users) => {
-    return [...users].sort((a, b) => {
-      // First sort by pinned status
-      if (pinnedChats.has(a.id) && !pinnedChats.has(b.id)) return -1;
-      if (!pinnedChats.has(a.id) && pinnedChats.has(b.id)) return 1;
-      // Then sort by username
-      return a.username.localeCompare(b.username);
-    });
   };
 
   // Add Online Status Indicator component
@@ -717,6 +792,65 @@ function App() {
       border-2 border-white
     `} />
   );
+
+  const ReadReceipt = ({ status }) => {
+    let icon = '✓'; // Single check for sent
+    let color = 'text-gray-400';
+  
+    if (status === 'delivered') {
+      icon = '✓✓'; // Double check for delivered
+      color = 'text-gray-400';
+    } else if (status === 'read') {
+      icon = '✓✓'; // Double check in blue for read
+      color = 'text-blue-500';
+    }
+  
+    return (
+      <span className={`text-xs ${color} ml-1`}>
+        {icon}
+      </span>
+    );
+  };
+
+  // // Add function to mark messages as read
+  // const markMessagesAsRead = useCallback(async (roomId) => {
+  //   if (!activeRoom) return;
+  
+  //   const unreadMessages = messages
+  //     .filter(msg => msg.user_id !== userId && !msg.read)
+  //     .map(msg => msg.id);
+  
+  //   if (unreadMessages.length === 0) return;
+  
+  //   try {
+  //     await axios.post('http://localhost:3001/api/messages/read', {
+  //       roomId,
+  //       userId,
+  //       messageIds: unreadMessages
+  //     });
+  
+  //     // Update local message statuses
+  //     setMessageStatuses(prev => {
+  //       const newStatuses = { ...prev };
+  //       unreadMessages.forEach(messageId => {
+  //         newStatuses[messageId] = {
+  //           ...newStatuses[messageId],
+  //           read: true,
+  //           readAt: new Date()
+  //         };
+  //       });
+  //       return newStatuses;
+  //     });
+  
+  //     // Update unread counts
+  //     setUnreadCounts(prev => ({
+  //       ...prev,
+  //       [roomId]: 0
+  //     }));
+  //   } catch (error) {
+  //     console.error('Error marking messages as read:', error);
+  //   }
+  // }, [activeRoom, messages, userId]); // Add dependencies
 
   // Add function to fetch unread counts
   const fetchUnreadCounts = useCallback(async () => {
@@ -732,12 +866,83 @@ function App() {
     }
   }, [userId]); // Add userId as dependency
 
+  // Add read receipt handling
+  useEffect(() => {
+    if (!userId) return;
+
+    // Listen for read receipts
+    socket.on('messages_read', ({ roomId, userId: readByUserId, messageIds, readAt }) => {
+      setMessageStatuses(prev => {
+        const newStatuses = { ...prev };
+        messageIds.forEach(messageId => {
+          newStatuses[messageId] = {
+            ...newStatuses[messageId],
+            read: true,
+            readAt: readAt
+          };
+        });
+        return newStatuses;
+      });
+    });
+
+    // Fetch initial unread counts
+    fetchUnreadCounts();
+
+    return () => {
+      socket.off('messages_read');
+    };
+  }, [userId,fetchUnreadCounts]);
+
+  
+  // Update message viewing logic
+  useEffect(() => {
+    if (activeRoom) {
+      markMessagesAsRead(activeRoom.id);
+    }
+  }, [activeRoom, messages, markMessagesAsRead]);
+
+  // Add new function to handle pin/unpin chats
+  const handlePinChat = (user, e) => {
+    e.stopPropagation(); // Prevent chat selection when pinning
+    const isPinned = pinnedChats.has(user.id);
+    
+    if (isPinned) {
+      const newPinnedChats = new Set(pinnedChats);
+      newPinnedChats.delete(user.id);
+      setPinnedChats(newPinnedChats);
+      localStorage.setItem('pinnedChats', JSON.stringify([...newPinnedChats]));
+    } else {
+      const newPinnedChats = new Set([...pinnedChats, user.id]);
+      setPinnedChats(newPinnedChats);
+      localStorage.setItem('pinnedChats', JSON.stringify([...newPinnedChats]));
+    }
+  };
+
+  // Add useEffect to load pinned chats from localStorage
+  useEffect(() => {
+    const savedPinnedChats = localStorage.getItem('pinnedChats');
+    if (savedPinnedChats) {
+      setPinnedChats(new Set(JSON.parse(savedPinnedChats)));
+    }
+  }, []);
+
+  // Add this helper function to sort users
+  const sortUsers = (users) => {
+    return [...users].sort((a, b) => {
+      // First sort by pinned status
+      if (pinnedChats.has(a.id) && !pinnedChats.has(b.id)) return -1;
+      if (!pinnedChats.has(a.id) && pinnedChats.has(b.id)) return 1;
+      // Then sort by username
+      return a.username.localeCompare(b.username);
+    });
+  };
+
   const PinIcon = ({ isPinned, onClick }) => (
     <button
       onClick={onClick}
       className={`
         p-1.5 rounded-full hover:bg-gray-200 transition-all
-        ${isPinned ? 'text-[#464775]' : 'text-gray-400'}
+        ${isPinned ? 'text-[#176cf7]' : 'text-gray-400'}
         opacity-0 group-hover:opacity-100
       `}
     >
@@ -759,63 +964,15 @@ function App() {
     </button>
   );
 
-
-  const ReadReceipt = ({ status }) => {
-    let icon = '✓'; // Single check for sent
-    let color = 'text-gray-400';
-  
-    if (status === 'delivered') {
-      icon = '✓✓'; // Double check for delivered
-      color = 'text-gray-400';
-    } else if (status === 'read') {
-      icon = '✓✓'; // Double check in blue for read
-      color = 'text-blue-500';
-    }
-  
-    return (
-      <span className={`text-xs ${color} ml-1`}>
-        {icon}
-      </span>
-    );
-  };
-
-  // Add read receipt handling
-  useEffect(() => {
-    if (!userId) return;
-  
-    // Listen for read receipts
-    socket.on('messages_read', ({ roomId, userId: readByUserId, messageIds, readAt }) => {
-      setMessageStatuses(prev => {
-        const newStatuses = { ...prev };
-        messageIds.forEach(messageId => {
-          newStatuses[messageId] = {
-            ...newStatuses[messageId],
-            read: true,
-            readAt: readAt
-          };
-        });
-        return newStatuses;
-      });
-    });
-  
-    // Fetch initial unread counts
-    fetchUnreadCounts();
-  
-    return () => {
-      socket.off('messages_read');
-    };
-  }, [userId, fetchUnreadCounts]); // Add fetchUnreadCounts
-
-  // Login screen render
   if (!userId) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f5f5f5] p-4">
         <div className="bg-white p-6 lg:p-8 rounded-lg shadow-md w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-[#464775] rounded-lg flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-[#176cf7] rounded-lg flex items-center justify-center mx-auto mb-4">
               <MessageSquare size={32} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-[#464775]">Chat Application</h1>
+            <h1 className="text-2xl font-bold text-[#176cf7]">Chat Application</h1>
             <p className="text-gray-500 mt-2">Sign in to start chatting</p>
           </div>
           
@@ -829,7 +986,7 @@ function App() {
                 placeholder="Enter your username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#464775]"
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#176cf7]"
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
                 disabled={loading}
               />
@@ -838,8 +995,8 @@ function App() {
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="w-full py-3 bg-[#464775] text-white rounded-lg hover:bg-[#5c5c94] 
-                       focus:outline-none focus:ring-2 focus:ring-[#464775] focus:ring-offset-2 
+              className="w-full py-3 bg-[#176cf7] text-white rounded-lg hover:bg-[#002D84] 
+                       focus:outline-none focus:ring-2 focus:ring-[#176cf7] focus:ring-offset-2 
                        disabled:opacity-50 transition-colors"
             >
               {loading ? 'Signing in...' : 'Sign In'}
@@ -853,21 +1010,15 @@ function App() {
   return (
     <div className="flex h-screen bg-[#f5f5f5]">
       {/* Desktop Navigation Sidebar */}
-      <div className="hidden lg:flex w-12 bg-[#464775] flex-col items-center py-4 space-y-4">
-        <button type="button" className="p-2 text-white hover:bg-[#5c5c94] rounded">
+      <div className="hidden lg:flex w-12 bg-[#176cf7] flex-col items-center py-4 space-y-4">
+        <button type="button" className="p-2 text-white hover:bg-[#002D84] rounded">
           <MessageSquare size={20} />
         </button>
-        {/*<button type="button" className="p-2 text-white hover:bg-[#5c5c94] rounded">
-          <Calendar size={20} />
-        </button>
-         <button type="button" className="p-2 text-white hover:bg-[#5c5c94] rounded">
-          <Users size={20} />
-        </button> */}
         <div className="flex-1" />
         <button 
           type="button"
           onClick={handleLogout}
-          className="p-2 text-white hover:bg-[#5c5c94] rounded"
+          className="p-2 text-white hover:bg-[#002D84] rounded"
         >
           <Settings size={20} />
         </button>
@@ -930,12 +1081,12 @@ function App() {
                     key={user.id}
                     className={`group px-3 py-2 cursor-pointer hover:bg-[#e1e1e1] flex items-center space-x-3
                       ${activeRoom?.otherUser?.id === user.id ? 'bg-[#e1e1e1]' : ''}
-                      ${isPinned ? 'border-l-2 border-[#464775]' : ''}
+                      ${isPinned ? 'border-l-2 border-[#176cf7]' : ''}
                     `}
                   >
                     <div className="relative flex-1 flex items-center space-x-3" onClick={() => startChat(user)}>
                       <div className="relative">
-                        <div className="w-10 h-10 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
+                        <div className="w-10 h-10 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
                           {user.username[0].toUpperCase()}
                         </div>
                         <OnlineStatusIndicator isOnline={onlineUsers.has(user.id)} />
@@ -950,7 +1101,7 @@ function App() {
                           <h3 className="font-semibold truncate">
                             {user.username}
                             {isPinned && (
-                              <span className="ml-2 text-xs text-[#464775]">
+                              <span className="ml-2 text-xs text-[#176cf7]">
                                 📌 Pinned
                               </span>
                             )}
@@ -992,20 +1143,20 @@ function App() {
                   <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4 z-50">
                     <button 
                       onClick={() => setShowSidebar(true)}
-                      className="p-3 text-gray-600 hover:text-[#464775] focus:outline-none focus:ring-2"
+                      className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
                     >
                       <MessageSquare size={24} />
                     </button>
                     <button 
                       onClick={handleLogout}
-                      className="p-3 text-gray-600 hover:text-[#464775] focus:outline-none focus:ring-2"
+                      className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
                     >
                       <Settings size={24} />
                     </button>
                   </div>
                 )}
                 <div className="relative">
-                  <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
+                  <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
                     {activeRoom.otherUser.username[0].toUpperCase()}
                   </div>
                   <OnlineStatusIndicator isOnline={onlineUsers.has(activeRoom.otherUser.id)} />
@@ -1073,14 +1224,14 @@ function App() {
                       className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'}`}
                     >
                       {msg.user_id !== userId && (
-                        <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm mr-2">
+                        <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
                           {msg.username?.[0].toUpperCase()}
                         </div>
                       )}
                       <div
                         className={`max-w-[70%] rounded-lg p-3 ${
                           msg.user_id === userId
-                            ? 'bg-[#464775] text-white'
+                            ? 'bg-[#176cf7] text-white'
                             : 'bg-[#f0f0f0]'
                         }`}
                       >
@@ -1092,7 +1243,7 @@ function App() {
                         {/* Add replied message preview if this is a reply */}
                         {msg.replied_to_message && (
                           <div className={`text-sm mb-2 p-2 rounded ${
-                            msg.user_id === userId ? 'bg-[#5c5c94]' : 'bg-gray-200'
+                            msg.user_id === userId ? 'bg-[#002D84]' : 'bg-gray-200'
                           }`}>
                             <div className="font-medium text-xs">
                               Replying to {msg.replied_to_message.username}
@@ -1122,7 +1273,7 @@ function App() {
               {/* Typing Indicator */}
               {activeRoom && otherUserTyping && (
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-[#464775] rounded-full flex items-center justify-center text-white text-sm">
+                  <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
                     {activeRoom.otherUser.username[0].toUpperCase()}
                   </div>
                   <TypingIndicator />
@@ -1141,7 +1292,7 @@ function App() {
               {replyingTo && (
                 <div className="bg-gray-200 p-2 mb-2 rounded-lg flex justify-between items-start">
                   <div>
-                    <div className="text-sm font-medium text-[#464775]">
+                    <div className="text-sm font-medium text-[#176cf7]">
                       Replying to {replyingTo.username}
                     </div>
                     <div className="text-sm text-gray-600 truncate">
@@ -1160,7 +1311,7 @@ function App() {
                 <div className="relative">
                   <button 
                     type="button"
-                    className="p-2 hover:bg-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-[#464775]"
+                    className="p-2 hover:bg-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-[#176cf7]"
                     onClick={() => setShowAttachmentOptions(!showAttachmentOptions)}
                   >
                     <Paperclip size={20} className="text-gray-600" />
@@ -1245,11 +1396,11 @@ function App() {
                   onClick={sendMessage}
                   disabled={!message.trim()}
                   className={`
-                    p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#464775]
+                    p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#176cf7]
                     ${message.trim() ? 'hover:bg-gray-200' : 'opacity-50 cursor-not-allowed'}
                   `}
                 >
-                  <Send size={20} className="text-[#464775]" />
+                  <Send size={20} className="text-[#176cf7]" />
                 </button>
               </div>
             </div>
