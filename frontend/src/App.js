@@ -749,13 +749,29 @@ function App() {
   };
   
   // Add TypingIndicator component
-  const TypingIndicator = () => (
-    <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 rounded-xl max-w-[100px]">
-      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-    </div>
-  );
+  // const TypingIndicator = () => (
+  //   <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 rounded-xl max-w-[100px]">
+  //     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+  //     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+  //     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+  //   </div>
+  // );
+
+  const TypingIndicator = ({ username }) => {
+    return (
+      <div className="flex items-center space-x-2 text-sm text-gray-500">
+        <span>{username} is typing</span>
+        <div className="flex space-x-1">
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" 
+               style={{ animationDelay: '0ms' }}/>
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" 
+               style={{ animationDelay: '200ms' }}/>
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" 
+               style={{ animationDelay: '400ms' }}/>
+        </div>
+      </div>
+    );
+  };
 
   // Update emoji click handler
   const handleEmojiClick = (emojiData, event) => {
