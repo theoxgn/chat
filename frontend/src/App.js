@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
+import { Copy, Forward, Reply, Trash2, MoreVertical, Check } from 'lucide-react';
 import axios from 'axios';
 import {
   Search,
@@ -74,6 +75,9 @@ function App() {
   const [pinnedChats, setPinnedChats] = useState(new Set());
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const [showMessageActions, setShowMessageActions] = useState(null); // Store message ID
+  const [showCopied, setShowCopied] = useState(false);
 
   // Functions
   const scrollToBottom = useCallback(() => {
@@ -387,7 +391,8 @@ function App() {
       replied_to_message: replyingTo ? {
         id: replyingTo.id,
         content: replyingTo.content,
-        username: replyingTo.username
+        username: replyingTo.username,
+        user_id: replyingTo.user_id
       } : null
     };
 
@@ -829,46 +834,76 @@ function App() {
       </span>
     );
   };
-
-  // // Add function to mark messages as read
-  // const markMessagesAsRead = useCallback(async (roomId) => {
-  //   if (!activeRoom) return;
+  const handleCopyMessage = async (content) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy message:', err);
+    }
+  };
   
-  //   const unreadMessages = messages
-  //     .filter(msg => msg.user_id !== userId && !msg.read)
-  //     .map(msg => msg.id);
+  const handleReplyMessage = (message) => {
+    // setReplyingTo(message);
+    // setShowMessageActions(null);
+    setReplyingTo({
+      id: message.id,
+      content: message.content,
+      username: message.username,
+      user_id: message.user_id
+    });
+    setShowMessageActions(null);
+    inputRef.current?.focus();
+  };
   
-  //   if (unreadMessages.length === 0) return;
+  const handleForwardMessage = (message) => {
+    setShowMessageActions(null);
+    // Show forward modal with existing users list
+    const forwardTo = window.prompt('Enter user ID to forward to:');
+    if (forwardTo) {
+      socket.emit('send_message', {
+        roomId: forwardTo,
+        userId: userId,
+        content: `Forwarded: ${message.content}`,
+        created_at: new Date(),
+      });
+    }
+  };
   
-  //   try {
-  //     await axios.post('http://localhost:3001/api/messages/read', {
-  //       roomId,
-  //       userId,
-  //       messageIds: unreadMessages
-  //     });
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      // Only allow deleting messages less than 5 minutes old
+      const message = messages.find(m => m.id === messageId);
+      const messageTime = new Date(message.created_at).getTime();
+      const now = new Date().getTime();
+      const fiveMinutes = 5 * 60 * 1000;
   
-  //     // Update local message statuses
-  //     setMessageStatuses(prev => {
-  //       const newStatuses = { ...prev };
-  //       unreadMessages.forEach(messageId => {
-  //         newStatuses[messageId] = {
-  //           ...newStatuses[messageId],
-  //           read: true,
-  //           readAt: new Date()
-  //         };
-  //       });
-  //       return newStatuses;
-  //     });
+      if (now - messageTime > fiveMinutes) {
+        alert('Messages can only be deleted within 5 minutes of sending');
+        return;
+      }
   
-  //     // Update unread counts
-  //     setUnreadCounts(prev => ({
-  //       ...prev,
-  //       [roomId]: 0
-  //     }));
-  //   } catch (error) {
-  //     console.error('Error marking messages as read:', error);
-  //   }
-  // }, [activeRoom, messages, userId]); // Add dependencies
+      await axios.delete(`http://localhost:3001/api/messages/${messageId}`);
+      setMessages(messages.filter(m => m.id !== messageId));
+      setShowMessageActions(null);
+    } catch (err) {
+      console.error('Failed to delete message:', err);
+      alert('Failed to delete message');
+    }
+  };
+  
+  // Add click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.message-actions')) {
+        setShowMessageActions(null);
+      }
+    };
+  
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Add function to fetch unread counts
   const fetchUnreadCounts = useCallback(async () => {
@@ -1466,55 +1501,143 @@ function App() {
                       readStatus={messageStatuses[msg.id]}
                     />
                   ) : (
-                    // <div
-                    //   className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'}`}
-                    // >
                     <div
                       data-message-id={msg.id}
                       data-message-time={new Date(msg.created_at).getTime()}
-                      className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'} group`}
                     >
                       {msg.user_id !== userId && (
                         <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
                           {msg.username?.[0].toUpperCase()}
                         </div>
                       )}
-                      <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          msg.user_id === userId
-                            ? 'bg-[#176cf7] text-white'
-                            : 'bg-[#f0f0f0]'
-                        }`}
-                      >
-                        {msg.user_id !== userId && (
-                          <div className="text-sm font-semibold mb-1">
-                            {msg.username}
+                      <div className="relative">
+                        {/* Message Actions Button - Positioned relative to message */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMessageActions(msg.id === showMessageActions ? null : msg.id);
+                          }}
+                          className={`absolute top-2 ${msg.user_id === userId ? 'left-0 -ml-8' : 'right-0 -mr-8'} 
+                            opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-gray-200 
+                            transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-300`}
+                        >
+                          <MoreVertical size={16} className="text-gray-500" />
+                        </button>
+
+                        {/* Message Actions Menu - Positioned relative to button */}
+                        {showMessageActions === msg.id && (
+                          <div className={`absolute ${msg.user_id === userId ? 'right-0' : 'left-0'} 
+                            top-0 mt-8 w-48 bg-white rounded-lg shadow-lg py-1 z-50 message-actions`}
+                          >
+                            <button
+                              onClick={() => handleCopyMessage(msg.content)}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                            >
+                              {showCopied ? (
+                                <>
+                                  <Check size={16} className="text-green-500" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={16} />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => handleForwardMessage(msg)}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                            >
+                              <Forward size={16} />
+                              <span>Forward</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleReplyMessage(msg)}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                            >
+                              <Reply size={16} />
+                              <span>Reply</span>
+                            </button>
+
+                            {msg.user_id === userId && (
+                              <button
+                                onClick={() => handleDeleteMessage(msg.id)}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2 text-red-500"
+                              >
+                                <Trash2 size={16} />
+                                <span>Delete</span>
+                              </button>
+                            )}
                           </div>
                         )}
-                        {/* Add replied message preview if this is a reply */}
-                        {msg.replied_to_message && (
-                          <div className={`text-sm mb-2 p-2 rounded ${
-                            msg.user_id === userId ? 'bg-[#002D84]' : 'bg-gray-200'
-                          }`}>
-                            <div className="font-medium text-xs">
-                              Replying to {msg.replied_to_message.username}
+                        
+                        <div
+                          className={`max-w rounded-lg p-3 ${
+                            msg.user_id === userId
+                              ? 'bg-[#176cf7] text-white'
+                              : 'bg-[#f0f0f0]'
+                          }`}
+                        >
+                          {msg.user_id !== userId && (
+                            <div className="text-sm font-semibold mb-1">
+                              {msg.username}
                             </div>
-                            <div className="truncate">
-                              {msg.replied_to_message.content}
+                          )}
+                          {/* Reply preview */}
+                          {/* {msg.replied_to_message && (
+                            <div className={`text-sm mb-2 p-2 rounded ${
+                              msg.user_id === userId ? 'bg-[#5c5c94]' : 'bg-gray-200'
+                            }`}>
+                              <div className="font-medium text-xs">
+                                Replying to {msg.replied_to_message.username}
+                              </div>
+                              <div className="truncate">
+                                {msg.replied_to_message.content}
+                              </div>
                             </div>
+                          )} */}
+                            {msg.replied_to_message && (
+                              <div 
+                                className={`text-sm mb-2 p-2 rounded cursor-pointer ${
+                                  msg.user_id === userId ? 'bg-[#002D84] bg-opacity-50' : 'bg-gray-200'
+                                }`}
+                                onClick={() => {
+                                  const repliedMessageEl = document.querySelector(
+                                    `[data-message-id="${msg.replied_to_message.id}"]`
+                                  );
+                                  if (repliedMessageEl) {
+                                    repliedMessageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    repliedMessageEl.classList.add('message-highlight');
+                                    setTimeout(() => {
+                                      repliedMessageEl.classList.remove('message-highlight');
+                                    }, 2000);
+                                  }
+                                }}
+                              >
+                                <div className="font-medium text-xs flex items-center gap-1">
+                                  <Reply size={12} />
+                                  Reply to {msg.replied_to_message.username}
+                                </div>
+                                <div className="truncate mt-1 opacity-90">
+                                  {msg.replied_to_message.content}
+                                </div>
+                              </div>
+                            )}
+                          <p className="text-sm break-words">{msg.content}</p>
+                          <div className="text-xs mt-1 opacity-70 flex items-center justify-end space-x-1">
+                            <span>{formatTime(msg.created_at)}</span>
+                            {msg.user_id === userId && (
+                              <ReadReceipt 
+                                status={messageStatuses[msg.id]?.read ? 'read' : 
+                                        messageStatuses[msg.id]?.delivered ? 'delivered' : 'sent'} 
+                              />
+                            )}
                           </div>
-                        )}
-                        <p className="text-sm">{msg.content}</p>
-                        <div className="text-xs mt-1 opacity-70 flex items-center justify-end space-x-1">
-                        <span>{formatTime(msg.created_at)}</span>
-                        {msg.user_id === userId && (
-                          <ReadReceipt status={messageStatuses[msg.id]?.read ? 'read' : 
-                                            messageStatuses[msg.id]?.delivered ? 'delivered' : 'sent'} />
-                        )}
-                      </div>
-                        {/* <p className="text-xs mt-1 opacity-70">
-                          {formatTime(msg.created_at)}
-                        </p> */}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1550,10 +1673,7 @@ function App() {
                       {replyingTo.content}
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setReplyingTo(null)}
-                    className="p-1 hover:bg-gray-300 rounded-full"
-                  >
+                  <button onClick={() => setReplyingTo(null)}>
                     <X size={16} className="text-gray-500" />
                   </button>
                 </div>

@@ -520,6 +520,44 @@ app.get('/api/messages/search/:roomId', async (req, res) => {
   }
 });
 
+// Delete message endpoint
+app.delete('/api/messages/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+  
+  try {
+    // Optional: Add additional checks here (e.g., message ownership)
+    await pool.query(
+      'DELETE FROM messages WHERE id = $1',
+      [messageId]
+    );
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+// Forward message endpoint
+app.post('/api/messages/forward', async (req, res) => {
+  const { messageId, targetRoomId, userId } = req.body;
+  
+  try {
+    const result = await pool.query(
+      `INSERT INTO messages (room_id, user_id, content, forwarded_from)
+       SELECT $1, $2, content, id
+       FROM messages
+       WHERE id = $3
+       RETURNING *`,
+      [targetRoomId, userId, messageId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error forwarding message:', error);
+    res.status(500).json({ error: 'Failed to forward message' });
+  }
+});
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
