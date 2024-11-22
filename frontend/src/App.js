@@ -63,7 +63,7 @@ function App() {
 
   // Add new state for online users
   const [onlineUsers, setOnlineUsers] = useState(new Set());
-
+  const [searchError, setSearchError] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [messageStatuses, setMessageStatuses] = useState({});
 
@@ -72,6 +72,8 @@ function App() {
 
   // Add these new states at the top of your App component
   const [pinnedChats, setPinnedChats] = useState(new Set());
+
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Functions
   const scrollToBottom = useCallback(() => {
@@ -964,6 +966,216 @@ function App() {
     </button>
   );
 
+  const SearchMessages = ({ isOpen, onClose, roomId }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const searchInputRef = useRef(null);
+    const resultsContainerRef = useRef(null);
+  
+    useEffect(() => {
+      if (isOpen && searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, [isOpen]);
+    const handleSearch = useCallback(async () => {
+      if (!searchQuery.trim() || !roomId) return;
+    
+      setIsSearching(true);
+      setSearchError(null);
+    
+      try {
+        const response = await axios.get(`http://localhost:3001/api/messages/search/${roomId}`, {
+          params: {
+            query: searchQuery.trim()
+          }
+        });
+        setSearchResults(response.data);
+      } catch (error) {
+        console.error('Error searching messages:', error);
+        setSearchError(error.response?.data?.error || 'Failed to search messages');
+        setSearchResults(null);
+      } finally {
+        setIsSearching(false);
+      }
+    }, [searchQuery, roomId]);
+  
+    // Enhanced scroll to message function
+    const scrollToMessage = useCallback((messageId, timestamp) => {
+      // Try to find the message by ID first
+      const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+  
+      if (messageElement) {
+        // Remove any existing highlights
+        document.querySelectorAll('.message-highlight').forEach(el => {
+          el.classList.remove('message-highlight');
+        });
+  
+        // Scroll the message into view
+        messageElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+  
+        // Add highlight effect
+        messageElement.classList.add('message-highlight');
+  
+        // Remove highlight after animation
+        setTimeout(() => {
+          messageElement.classList.remove('message-highlight');
+        }, 3000);
+      } else {
+        // Fallback: If message not found by ID, try to find by timestamp
+        const messageTime = new Date(timestamp).getTime();
+        const messageElements = document.querySelectorAll('[data-message-time]');
+        let closestMessage = null;
+        let minTimeDiff = Infinity;
+  
+        messageElements.forEach(element => {
+          const elementTime = parseInt(element.getAttribute('data-message-time'));
+          const timeDiff = Math.abs(elementTime - messageTime);
+          
+          if (timeDiff < minTimeDiff) {
+            minTimeDiff = timeDiff;
+            closestMessage = element;
+          }
+        });
+  
+        if (closestMessage) {
+          closestMessage.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+  
+          closestMessage.classList.add('message-highlight');
+          setTimeout(() => {
+            closestMessage.classList.remove('message-highlight');
+          }, 3000);
+        }
+      }
+      
+      // Close search modal
+      onClose();
+    }, [onClose]);
+  
+    // Debounce search
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (searchQuery.trim()) {
+          handleSearch();
+        }
+      }, 300);
+  
+      return () => clearTimeout(timer);
+    }, [searchQuery, handleSearch]);
+  
+    if (!isOpen) return null;
+  
+    return (
+      <div className="absolute inset-0 bg-white z-50 flex flex-col">
+        {/* Search Header */}
+        <div className="p-4 border-b flex items-center space-x-4">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <X size={20} />
+          </button>
+          <div className="flex-1 relative">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search in conversation..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full p-2 pl-10 bg-gray-100 rounded-lg outline-none"
+            />
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+          </div>
+        </div>
+  
+        {/* Search Results */}
+        <div className="flex-1 overflow-y-auto p-4" ref={resultsContainerRef}>
+          {isSearching ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin h-6 w-6 border-2 border-[#176cf7] border-t-transparent rounded-full" />
+            </div>
+          ) : searchError ? (
+            <div className="text-center text-red-500 mt-8">
+              {searchError}
+            </div>
+          ) : searchResults ? (
+            <div className="space-y-6">
+              {searchResults.totalResults === 0 ? (
+                <div className="text-center text-gray-500 mt-8">
+                  No messages found
+                </div>
+              ) : (
+                <>
+                  <div className="text-sm text-gray-500">
+                    Found {searchResults.totalResults} results
+                  </div>
+                  {Object.entries(searchResults.groupedResults).map(([date, messages]) => (
+                    <div key={date} className="space-y-2">
+                      <div className="sticky top-0 bg-white py-2 z-10">
+                        <div className="text-sm font-medium text-gray-500">
+                          {new Date(date).toLocaleDateString(undefined, { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {messages.map((message) => (
+                          <div
+                            key={message.id}
+                            className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                            onClick={() => scrollToMessage(message.id, message.created_at)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
+                                  {message.username[0].toUpperCase()}
+                                </div>
+                                <span className="font-medium text-sm">
+                                  {message.username}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {new Date(message.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: false
+                                })}
+                              </span>
+                            </div>
+                            <div className="mt-2 text-sm text-gray-700">
+                              {message.content.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, i) => (
+                                part.toLowerCase() === searchQuery.toLowerCase() ? (
+                                  <span key={i} className="bg-yellow-200 rounded px-1">
+                                    {part}
+                                  </span>
+                                ) : (
+                                  <span key={i}>{part}</span>
+                                )
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
   if (!userId) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f5f5f5] p-4">
@@ -1168,7 +1380,25 @@ function App() {
                   </span>
                 </div>
               </div>
+              {/* Add the search button here */}
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => setIsSearchOpen(true)} 
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <Search size={20} className="text-gray-600" />
+                </button>
+              </div>
             </div>
+
+              {/* Add SearchMessages component here */}
+              {activeRoom && (
+                <SearchMessages
+                  isOpen={isSearchOpen}
+                  onClose={() => setIsSearchOpen(false)}
+                  roomId={activeRoom.id}
+                />
+              )}
 
             {/* Messages Area */}
             {/* <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-4 pb-20 lg:pb-4"> */}
@@ -1220,7 +1450,12 @@ function App() {
                       readStatus={messageStatuses[msg.id]}
                     />
                   ) : (
+                    // <div
+                    //   className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'}`}
+                    // >
                     <div
+                      data-message-id={msg.id}
+                      data-message-time={new Date(msg.created_at).getTime()}
                       className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'}`}
                     >
                       {msg.user_id !== userId && (

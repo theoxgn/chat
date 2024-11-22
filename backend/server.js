@@ -470,6 +470,56 @@ app.get('/api/chats/pin/:userId', async (req, res) => {
   }
 });
 
+// Add this new endpoint to search messages
+app.get('/api/messages/search/:roomId', async (req, res) => {
+  try {
+    const roomId = parseInt(req.params.roomId);
+    const searchQuery = req.query.query;
+    
+    // Input validation
+    if (isNaN(roomId) || !searchQuery) {
+      return res.status(400).json({ 
+        error: 'Valid room ID and search query are required' 
+      });
+    }
+
+    // Add logging for debugging
+    console.log('Searching messages:', { roomId, searchQuery });
+
+    const result = await pool.query(
+      `SELECT m.*, u.username 
+       FROM messages m 
+       JOIN users u ON m.user_id = u.id 
+       WHERE m.room_id = $1 
+       AND LOWER(m.content) LIKE LOWER($2)
+       ORDER BY m.created_at DESC`,
+      [roomId, `%${searchQuery}%`]
+    );
+
+    // Group results by date for better organization
+    const groupedResults = result.rows.reduce((acc, message) => {
+      const date = new Date(message.created_at).toLocaleDateString();
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(message);
+      return acc;
+    }, {});
+
+    res.json({
+      totalResults: result.rows.length,
+      groupedResults
+    });
+
+  } catch (error) {
+    console.error('Error searching messages:', error);
+    res.status(500).json({ 
+      error: 'Failed to search messages',
+      details: error.message 
+    });
+  }
+});
+
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
