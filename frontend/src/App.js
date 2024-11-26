@@ -14,6 +14,8 @@ import {
   File,
   X
 } from 'lucide-react';
+import toast from './store/zustand/toast';
+import Toast from './components/Toast/Toast';
 
 const socket = io('http://localhost:3001');
 
@@ -27,6 +29,8 @@ const formatTime = (date) => {
 };
 
 function App() {
+
+  const { dataToast, setDataToast, setShowToast, showToast } = toast()
   // States
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState(null);
@@ -971,6 +975,14 @@ function App() {
     }
   };
 
+  const handleChangeProfile = () => {
+    setDataToast({
+      type: "error",
+      message: "Nama baru saja diperbarui. Penggantian nama selanjutnya dapat dilakukan dalam 30 hari lagi"
+    })
+    setShowToast(true)
+  }
+
   // Add useEffect to load pinned chats from localStorage
   useEffect(() => {
     const savedPinnedChats = localStorage.getItem('pinnedChats');
@@ -1271,527 +1283,558 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-[#f5f5f5]">
-      {/* Desktop Navigation Sidebar */}
-      <div className="hidden lg:flex w-12 bg-[#176cf7] flex-col items-center py-4 space-y-4">
-        <button type="button" className="p-2 text-white hover:bg-[#002D84] rounded">
-          <MessageSquare size={20} />
-        </button>
-        <div className="flex-1" />
-        <button 
-          type="button"
-          onClick={handleLogout}
-          className="p-2 text-white hover:bg-[#002D84] rounded"
-        >
-          <Settings size={20} />
-        </button>
-      </div>
-
-      {/* Chat List Sidebar */}
-      <div className={`${
-        showSidebar ? 'flex' : 'hidden'
-      } w-full lg:w-80 bg-white lg:bg-[#f0f0f0] border-r flex-col absolute lg:relative z-20 h-full`}>
-        <div className="p-3 flex items-center justify-between border-b">
-          {isMobile && activeRoom && (
-            <button
-              onClick={() => setShowSidebar(false)}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <X size={20} />
-            </button>
-          )}
-          <div className="flex-1 px-2">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search"
-                className="w-full pl-8 pr-3 py-1.5 bg-gray-100 rounded-full text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="absolute left-2 top-2 text-gray-400" size={16} />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {pinnedChats.size > 0 && (
-            <div className="px-3 py-2 text-sm font-semibold text-gray-600">
-              Pinned Chats
-            </div>
-          )}
-          {error ? (
-            <div className="p-4 text-center text-red-500">
-              Failed to load users. Please try again.
-            </div>
-          ) : usersLoading ? (
-            <div className="p-4 text-center text-gray-500">
-              Loading users...
-            </div>
-          ) : users.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              No users found
-            </div>
-          ) : (
-            <>
-              {sortUsers(users.filter(user => 
-                user.username.toLowerCase().includes(searchTerm.toLowerCase())
-              )).map((user) => {
-                const isPinned = pinnedChats.has(user.id);
-                
-                return (
-                  <div
-                    key={user.id}
-                    className={`group px-3 py-2 cursor-pointer hover:bg-[#e1e1e1] flex items-center space-x-3
-                      ${activeRoom?.otherUser?.id === user.id ? 'bg-[#e1e1e1]' : ''}
-                      ${isPinned ? 'border-l-2 border-[#176cf7]' : ''}
-                    `}
-                  >
-                    <div className="relative flex-1 flex items-center space-x-3" onClick={() => startChat(user)}>
-                      <div className="relative">
-                        <div className="w-10 h-10 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
-                          {user.username[0].toUpperCase()}
-                        </div>
-                        <OnlineStatusIndicator isOnline={onlineUsers.has(user.id)} />
-                        {unreadCounts[user.id] > 0 && (
-                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
-                            {unreadCounts[user.id]}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-semibold truncate">
-                            {user.username}
-                            {isPinned && (
-                              <span className="ml-2 text-xs text-[#176cf7]">
-                                📌 Pinned
-                              </span>
-                            )}
-                            <span className="ml-2 text-xs text-gray-500">
-                              {onlineUsers.has(user.id) ? 'online' : 'offline'}
-                            </span>
-                          </h3>
-                          <span className="text-xs text-gray-500">
-                            {formatTime(new Date())}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500 truncate">
-                          Click to start chatting
-                        </p>
-                      </div>
-                    </div>
-                    <PinIcon 
-                      isPinned={isPinned}
-                      onClick={(e) => handlePinChat(user, e)}
-                    />
-                  </div>
-                );
-              })}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col bg-white relative ${
-        isMobile && showSidebar ? 'hidden' : 'flex'
-      }`}>
-        {activeRoom ? (
-          <>
-            {/* Chat Header - Modified for mobile */}
-            <div className="h-14 border-b flex items-center justify-between px-4">
-              <div className="flex items-center space-x-3">
-              {isMobile && (
-                  <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4 z-50">
-                    <button 
-                      onClick={() => setShowSidebar(true)}
-                      className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
-                    >
-                      <MessageSquare size={24} />
-                    </button>
-                    <button 
-                      onClick={handleLogout}
-                      className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
-                    >
-                      <Settings size={24} />
-                    </button>
-                  </div>
-                )}
-                <div className="relative">
-                  <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
-                    {activeRoom.otherUser.username[0].toUpperCase()}
-                  </div>
-                  <OnlineStatusIndicator isOnline={onlineUsers.has(activeRoom.otherUser.id)} />
-                </div>
-                <div>
-                  <h2 className="font-semibold">{activeRoom.otherUser.username}</h2>
-                  <span className="text-xs text-gray-500">
-                    {onlineUsers.has(activeRoom.otherUser.id) ? 'online' : 'offline'}
-                  </span>
-                </div>
+    <>
+      {showToast ? (
+        <Toast classname="z-[2]" type={dataToast?.type}>
+          {dataToast?.message}
+        </Toast>
+      ) : null}
+      <div className='py-6 px-18'>
+        <div className="flex h-[calc(100vh_-_48px)] bg-[#f5f5f5] rounded-lg">
+          {/* Desktop Navigation Sidebar */}
+          <div className="hidden lg:flex w-[268px] bg-[#F8F8F8] p-3 flex-col justify-between">
+            <div className='space-y-3'>
+              <div className='pb-3 border-b-[1px] border-b-[#EBEBEB]'>
+                Sesuatu
               </div>
-              {/* Add the search button here */}
-              <div className="flex items-center space-x-2">
-                <button 
-                  onClick={() => setIsSearchOpen(true)} 
+              <div className='flex flex-row items-center gap-x-3'>
+                <div className='rounded-[48px] border-[#EBEBEB] border-[1px] p-[9px] space-y-0'>
+                  <img src="/icons/favourite-blue.svg" />
+                </div>
+                <span className='font-semibold text-[14px] leading-[16.8px] text-[#1B1B1B] items-center'>Obrolan Favorit</span>
+              </div>
+            </div>
+            <div className='pt-3 border-t-[1px] border-t-[#EBEBEB] flex flex-row justify-between items-center'>
+              <div className='flex flex-row gap-x-3'>
+                <div>
+                  Foto
+                </div>
+                <span>Daffa</span>
+              </div>
+              <span className='underline font-medium text-[12px] leading-[14.4px] text-[#176CF7] cursor-pointer' onClick={handleChangeProfile}>
+                Ubah Nama
+              </span>
+            </div>
+            {/* <button type="button" className="p-2 text-white hover:bg-[#002D84] rounded">
+              <MessageSquare size={20} />
+            </button>
+            <div className="flex-1" />
+            <button 
+              type="button"
+              onClick={handleLogout}
+              className="p-2 text-white hover:bg-[#002D84] rounded"
+            >
+              <Settings size={20} />
+            </button> */}
+          </div>
+
+          {/* Chat List Sidebar */}
+          <div className={`${
+            showSidebar ? 'flex' : 'hidden'
+          } w-full lg:w-80 bg-white lg:bg-[#f0f0f0] border-r flex-col absolute lg:relative z-20 h-full`}>
+            <div className="p-3 flex items-center justify-between border-b">
+              {isMobile && activeRoom && (
+                <button
+                  onClick={() => setShowSidebar(false)}
                   className="p-2 hover:bg-gray-100 rounded-full"
                 >
-                  <Search size={20} className="text-gray-600" />
+                  <X size={20} />
                 </button>
-              </div>
-            </div>
-
-              {/* Add SearchMessages component here */}
-              {activeRoom && (
-                <SearchMessages
-                  isOpen={isSearchOpen}
-                  onClose={() => setIsSearchOpen(false)}
-                  roomId={activeRoom.id}
-                />
               )}
-
-            {/* Messages Area */}
-            {/* <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-4 pb-20 lg:pb-4"> */}
-            <div className={`
-              flex-1 overflow-y-auto p-3 lg:p-4 space-y-4
-              ${isMobile ? 'pb-7' : 'pb-6'} // Increase bottom padding on mobile
-            `}>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const maxSize = 10 * 1024 * 1024; // 10MB max
-                    if (file.size > maxSize) {
-                      alert('File size should not exceed 10MB');
-                      return;
-                    }
-                    setPreview(file);
-                    setShowPreview(true);
-                  }
-                  e.target.value = ''; // Reset input
-                }}
-              />
-              {showPreview && preview && (
-                <FilePreview
-                  file={preview}
-                  onClose={() => {
-                    setShowPreview(false);
-                    setPreview(null);
-                  }}
-                  onUpload={() => {
-                    handleFileUpload(preview);
-                    setShowPreview(false);
-                    setPreview(null);
-                  }}
-                />
-              )}
-
-              {isUploading && <UploadProgress progress={uploadProgress} />}
-              
-              {messages.map((msg, index) => (
-                <div key={index}>
-                  {msg.messageType === 'file' ? (
-                    <FileMessage 
-                      msg={msg} 
-                      isOwn={msg.user_id === userId} 
-                      readStatus={messageStatuses[msg.id]}
-                    />
-                  ) : (
-                    <div
-                      data-message-id={msg.id}
-                      data-message-time={new Date(msg.created_at).getTime()}
-                      className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'} group`}
-                    >
-                      {msg.user_id !== userId && (
-                        <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
-                          {msg.username?.[0].toUpperCase()}
-                        </div>
-                      )}
-                      <div className="relative">
-                        {/* Message Actions Button - Positioned relative to message */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowMessageActions(msg.id === showMessageActions ? null : msg.id);
-                          }}
-                          className={`absolute top-2 ${msg.user_id === userId ? 'left-0 -ml-8' : 'right-0 -mr-8'} 
-                            opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-gray-200 
-                            transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-300`}
-                        >
-                          <MoreVertical size={16} className="text-gray-500" />
-                        </button>
-
-                        {/* Message Actions Menu - Positioned relative to button */}
-                        {showMessageActions === msg.id && (
-                          <div className={`absolute ${msg.user_id === userId ? 'right-0' : 'left-0'} 
-                            top-0 mt-8 w-48 bg-white rounded-lg shadow-lg py-1 z-50 message-actions`}
-                          >
-                            <button
-                              onClick={() => handleCopyMessage(msg.content)}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                            >
-                              {showCopied ? (
-                                <>
-                                  <Check size={16} className="text-green-500" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy size={16} />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-
-                            <button
-                              onClick={() => handleForwardMessage(msg)}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                            >
-                              <Forward size={16} />
-                              <span>Forward</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleReplyMessage(msg)}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                            >
-                              <Reply size={16} />
-                              <span>Reply</span>
-                            </button>
-
-                            {msg.user_id === userId && (
-                              <button
-                                onClick={() => handleDeleteMessage(msg.id)}
-                                className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2 text-red-500"
-                              >
-                                <Trash2 size={16} />
-                                <span>Delete</span>
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        
-                        <div
-                          className={`max-w rounded-lg p-3 ${
-                            msg.user_id === userId
-                              ? 'bg-[#176cf7] text-white'
-                              : 'bg-[#f0f0f0]'
-                          }`}
-                        >
-                          {msg.user_id !== userId && (
-                            <div className="text-sm font-semibold mb-1">
-                              {msg.username}
-                            </div>
-                          )}
-                          {/* Reply preview */}
-                          {/* {msg.replied_to_message && (
-                            <div className={`text-sm mb-2 p-2 rounded ${
-                              msg.user_id === userId ? 'bg-[#5c5c94]' : 'bg-gray-200'
-                            }`}>
-                              <div className="font-medium text-xs">
-                                Replying to {msg.replied_to_message.username}
-                              </div>
-                              <div className="truncate">
-                                {msg.replied_to_message.content}
-                              </div>
-                            </div>
-                          )} */}
-                            {msg.replied_to_message && (
-                              <div 
-                                className={`text-sm mb-2 p-2 rounded cursor-pointer ${
-                                  msg.user_id === userId ? 'bg-[#002D84] bg-opacity-50' : 'bg-gray-200'
-                                }`}
-                                onClick={() => {
-                                  const repliedMessageEl = document.querySelector(
-                                    `[data-message-id="${msg.replied_to_message.id}"]`
-                                  );
-                                  if (repliedMessageEl) {
-                                    repliedMessageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    repliedMessageEl.classList.add('message-highlight');
-                                    setTimeout(() => {
-                                      repliedMessageEl.classList.remove('message-highlight');
-                                    }, 2000);
-                                  }
-                                }}
-                              >
-                                <div className="font-medium text-xs flex items-center gap-1">
-                                  <Reply size={12} />
-                                  Reply to {msg.replied_to_message.username}
-                                </div>
-                                <div className="truncate mt-1 opacity-90">
-                                  {msg.replied_to_message.content}
-                                </div>
-                              </div>
-                            )}
-                          <p className="text-sm break-words">{msg.content}</p>
-                          <div className="text-xs mt-1 opacity-70 flex items-center justify-end space-x-1">
-                            <span>{formatTime(msg.created_at)}</span>
-                            {msg.user_id === userId && (
-                              <ReadReceipt 
-                                status={messageStatuses[msg.id]?.read ? 'read' : 
-                                        messageStatuses[msg.id]?.delivered ? 'delivered' : 'sent'} 
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {/* Typing Indicator */}
-              {activeRoom && otherUserTyping && (
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
-                    {activeRoom.otherUser.username[0].toUpperCase()}
-                  </div>
-                  <TypingIndicator />
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Message Input */}
-            <div className="border-t p-2 lg:p-4 bg-white relative">
-              <div className={`
-              bg-[#f0f0f0] rounded-lg p-2
-              ${isMobile ? 'mb-16' : ''} // Add margin bottom on mobile to account for nav bar
-            `}>
-              {/* Add reply preview */}
-              {replyingTo && (
-                <div className="bg-gray-200 p-2 mb-2 rounded-lg flex justify-between items-start">
-                  <div>
-                    <div className="text-sm font-medium text-[#176cf7]">
-                      Replying to {replyingTo.username}
-                    </div>
-                    <div className="text-sm text-gray-600 truncate">
-                      {replyingTo.content}
-                    </div>
-                  </div>
-                  <button onClick={() => setReplyingTo(null)}>
-                    <X size={16} className="text-gray-500" />
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center space-x-2 mb-2">
+              <div className="flex-1 px-2">
                 <div className="relative">
-                  <button 
-                    type="button"
-                    className="p-2 hover:bg-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-[#176cf7]"
-                    onClick={() => setShowAttachmentOptions(!showAttachmentOptions)}
-                  >
-                    <Paperclip size={20} className="text-gray-600" />
-                  </button>
-                  {showAttachmentOptions && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg py-2 z-50">
-                      <button
-                        type="button"
-                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => handleAttachment('image')}
-                      >
-                        <ImageIcon size={16} />
-                        <span>Image</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => handleAttachment('file')}
-                      >
-                        <File size={16} />
-                        <span>File</span>
-                      </button>
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    className="w-full pl-8 pr-3 py-1.5 bg-gray-100 rounded-full text-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <Search className="absolute left-2 top-2 text-gray-400" size={16} />
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={handleMessageChange}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                  placeholder="Type a new message"
-                  className="flex-1 bg-transparent outline-none text-sm p-2 rounded"
-                />
+            </div>
 
-                {/* Emoji Button and Picker */}
-                <div className="relative" ref={emojiPickerRef}>
-                  <button 
-                    type="button"
-                    className="p-2 hover:bg-gray-200 rounded"
-                    onClick={() => setShowEmoji(!showEmoji)}
-                  >
-                    <Smile size={20} className="text-gray-600" />
-                  </button>
-                  
-                  {showEmoji && (
-                    <div className="absolute bottom-full right-0 mb-2">
-                      <div className="relative bg-white rounded-lg shadow-lg">
-                        <button
-                          className="absolute right-2 top-2 p-1 hover:bg-gray-100 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowEmoji(false);
-                          }}
-                        >
-                          <X size={16} />
-                        </button>
-                        <EmojiPicker
-                          onEmojiClick={handleEmojiClick}
-                          autoFocusSearch={false}
-                          searchDisabled
-                          skinTonesDisabled
-                          height={350}
-                          width={280}
-                          previewConfig={{
-                            showPreview: false
-                          }}
-                          lazyLoadEmojis={true}
+            <div className="flex-1 overflow-y-auto">
+              {pinnedChats.size > 0 && (
+                <div className="px-3 py-2 text-sm font-semibold text-gray-600">
+                  Pinned Chats
+                </div>
+              )}
+              {error ? (
+                <div className="p-4 text-center text-red-500">
+                  Failed to load users. Please try again.
+                </div>
+              ) : usersLoading ? (
+                <div className="p-4 text-center text-gray-500">
+                  Loading users...
+                </div>
+              ) : users.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  No users found
+                </div>
+              ) : (
+                <>
+                  {sortUsers(users.filter(user => 
+                    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+                  )).map((user) => {
+                    const isPinned = pinnedChats.has(user.id);
+                    
+                    return (
+                      <div
+                        key={user.id}
+                        className={`group px-3 py-2 cursor-pointer hover:bg-[#e1e1e1] flex items-center space-x-3
+                          ${activeRoom?.otherUser?.id === user.id ? 'bg-[#e1e1e1]' : ''}
+                          ${isPinned ? 'border-l-2 border-[#176cf7]' : ''}
+                        `}
+                      >
+                        <div className="relative flex-1 flex items-center space-x-3" onClick={() => startChat(user)}>
+                          <div className="relative">
+                            <div className="w-10 h-10 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
+                              {user.username[0].toUpperCase()}
+                            </div>
+                            <OnlineStatusIndicator isOnline={onlineUsers.has(user.id)} />
+                            {unreadCounts[user.id] > 0 && (
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
+                                {unreadCounts[user.id]}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start">
+                              <h3 className="font-semibold truncate">
+                                {user.username}
+                                {isPinned && (
+                                  <span className="ml-2 text-xs text-[#176cf7]">
+                                    📌 Pinned
+                                  </span>
+                                )}
+                                <span className="ml-2 text-xs text-gray-500">
+                                  {onlineUsers.has(user.id) ? 'online' : 'offline'}
+                                </span>
+                              </h3>
+                              <span className="text-xs text-gray-500">
+                                {formatTime(new Date())}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500 truncate">
+                              Click to start chatting
+                            </p>
+                          </div>
+                        </div>
+                        <PinIcon 
+                          isPinned={isPinned}
+                          onClick={(e) => handlePinChat(user, e)}
                         />
                       </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Main Chat Area */}
+          <div className={`flex-1 flex flex-col bg-white relative ${
+            isMobile && showSidebar ? 'hidden' : 'flex'
+          }`}>
+            {activeRoom ? (
+              <>
+                {/* Chat Header - Modified for mobile */}
+                <div className="h-14 border-b flex items-center justify-between px-4">
+                  <div className="flex items-center space-x-3">
+                  {isMobile && (
+                      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4 z-50">
+                        <button 
+                          onClick={() => setShowSidebar(true)}
+                          className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
+                        >
+                          <MessageSquare size={24} />
+                        </button>
+                        <button 
+                          onClick={handleLogout}
+                          className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
+                        >
+                          <Settings size={24} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="relative">
+                      <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
+                        {activeRoom.otherUser.username[0].toUpperCase()}
+                      </div>
+                      <OnlineStatusIndicator isOnline={onlineUsers.has(activeRoom.otherUser.id)} />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold">{activeRoom.otherUser.username}</h2>
+                      <span className="text-xs text-gray-500">
+                        {onlineUsers.has(activeRoom.otherUser.id) ? 'online' : 'offline'}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Add the search button here */}
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => setIsSearchOpen(true)} 
+                      className="p-2 hover:bg-gray-100 rounded-full"
+                    >
+                      <Search size={20} className="text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+
+                  {/* Add SearchMessages component here */}
+                  {activeRoom && (
+                    <SearchMessages
+                      isOpen={isSearchOpen}
+                      onClose={() => setIsSearchOpen(false)}
+                      roomId={activeRoom.id}
+                    />
+                  )}
+
+                {/* Messages Area */}
+                {/* <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-4 pb-20 lg:pb-4"> */}
+                <div className={`
+                  flex-1 overflow-y-auto p-3 lg:p-4 space-y-4
+                  ${isMobile ? 'pb-7' : 'pb-6'} // Increase bottom padding on mobile
+                `}>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const maxSize = 10 * 1024 * 1024; // 10MB max
+                        if (file.size > maxSize) {
+                          alert('File size should not exceed 10MB');
+                          return;
+                        }
+                        setPreview(file);
+                        setShowPreview(true);
+                      }
+                      e.target.value = ''; // Reset input
+                    }}
+                  />
+                  {showPreview && preview && (
+                    <FilePreview
+                      file={preview}
+                      onClose={() => {
+                        setShowPreview(false);
+                        setPreview(null);
+                      }}
+                      onUpload={() => {
+                        handleFileUpload(preview);
+                        setShowPreview(false);
+                        setPreview(null);
+                      }}
+                    />
+                  )}
+
+                  {isUploading && <UploadProgress progress={uploadProgress} />}
+                  
+                  {messages.map((msg, index) => (
+                    <div key={index}>
+                      {msg.messageType === 'file' ? (
+                        <FileMessage 
+                          msg={msg} 
+                          isOwn={msg.user_id === userId} 
+                          readStatus={messageStatuses[msg.id]}
+                        />
+                      ) : (
+                        <div
+                          data-message-id={msg.id}
+                          data-message-time={new Date(msg.created_at).getTime()}
+                          className={`flex ${msg.user_id === userId ? 'justify-end' : 'justify-start'} group`}
+                        >
+                          {msg.user_id !== userId && (
+                            <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
+                              {msg.username?.[0].toUpperCase()}
+                            </div>
+                          )}
+                          <div className="relative">
+                            {/* Message Actions Button - Positioned relative to message */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMessageActions(msg.id === showMessageActions ? null : msg.id);
+                              }}
+                              className={`absolute top-2 ${msg.user_id === userId ? 'left-0 -ml-8' : 'right-0 -mr-8'} 
+                                opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-gray-200 
+                                transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-300`}
+                            >
+                              <MoreVertical size={16} className="text-gray-500" />
+                            </button>
+
+                            {/* Message Actions Menu - Positioned relative to button */}
+                            {showMessageActions === msg.id && (
+                              <div className={`absolute ${msg.user_id === userId ? 'right-0' : 'left-0'} 
+                                top-0 mt-8 w-48 bg-white rounded-lg shadow-lg py-1 z-50 message-actions`}
+                              >
+                                <button
+                                  onClick={() => handleCopyMessage(msg.content)}
+                                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                                >
+                                  {showCopied ? (
+                                    <>
+                                      <Check size={16} className="text-green-500" />
+                                      <span>Copied!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={16} />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                <button
+                                  onClick={() => handleForwardMessage(msg)}
+                                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                                >
+                                  <Forward size={16} />
+                                  <span>Forward</span>
+                                </button>
+
+                                <button
+                                  onClick={() => handleReplyMessage(msg)}
+                                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                                >
+                                  <Reply size={16} />
+                                  <span>Reply</span>
+                                </button>
+
+                                {msg.user_id === userId && (
+                                  <button
+                                    onClick={() => handleDeleteMessage(msg.id)}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2 text-red-500"
+                                  >
+                                    <Trash2 size={16} />
+                                    <span>Delete</span>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            <div
+                              className={`max-w rounded-lg p-3 ${
+                                msg.user_id === userId
+                                  ? 'bg-[#176cf7] text-white'
+                                  : 'bg-[#f0f0f0]'
+                              }`}
+                            >
+                              {msg.user_id !== userId && (
+                                <div className="text-sm font-semibold mb-1">
+                                  {msg.username}
+                                </div>
+                              )}
+                              {/* Reply preview */}
+                              {/* {msg.replied_to_message && (
+                                <div className={`text-sm mb-2 p-2 rounded ${
+                                  msg.user_id === userId ? 'bg-[#5c5c94]' : 'bg-gray-200'
+                                }`}>
+                                  <div className="font-medium text-xs">
+                                    Replying to {msg.replied_to_message.username}
+                                  </div>
+                                  <div className="truncate">
+                                    {msg.replied_to_message.content}
+                                  </div>
+                                </div>
+                              )} */}
+                                {msg.replied_to_message && (
+                                  <div 
+                                    className={`text-sm mb-2 p-2 rounded cursor-pointer ${
+                                      msg.user_id === userId ? 'bg-[#002D84] bg-opacity-50' : 'bg-gray-200'
+                                    }`}
+                                    onClick={() => {
+                                      const repliedMessageEl = document.querySelector(
+                                        `[data-message-id="${msg.replied_to_message.id}"]`
+                                      );
+                                      if (repliedMessageEl) {
+                                        repliedMessageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        repliedMessageEl.classList.add('message-highlight');
+                                        setTimeout(() => {
+                                          repliedMessageEl.classList.remove('message-highlight');
+                                        }, 2000);
+                                      }
+                                    }}
+                                  >
+                                    <div className="font-medium text-xs flex items-center gap-1">
+                                      <Reply size={12} />
+                                      Reply to {msg.replied_to_message.username}
+                                    </div>
+                                    <div className="truncate mt-1 opacity-90">
+                                      {msg.replied_to_message.content}
+                                    </div>
+                                  </div>
+                                )}
+                              <p className="text-sm break-words">{msg.content}</p>
+                              <div className="text-xs mt-1 opacity-70 flex items-center justify-end space-x-1">
+                                <span>{formatTime(msg.created_at)}</span>
+                                {msg.user_id === userId && (
+                                  <ReadReceipt 
+                                    status={messageStatuses[msg.id]?.read ? 'read' : 
+                                            messageStatuses[msg.id]?.delivered ? 'delivered' : 'sent'} 
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Typing Indicator */}
+                  {activeRoom && otherUserTyping && (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
+                        {activeRoom.otherUser.username[0].toUpperCase()}
+                      </div>
+                      <TypingIndicator />
                     </div>
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
-                <button
-                  type="button"
-                  onClick={sendMessage}
-                  disabled={!message.trim()}
-                  className={`
-                    p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#176cf7]
-                    ${message.trim() ? 'hover:bg-gray-200' : 'opacity-50 cursor-not-allowed'}
-                  `}
-                >
-                  <Send size={20} className="text-[#176cf7]" />
-                </button>
+
+                {/* Message Input */}
+                <div className="border-t p-2 lg:p-4 bg-white relative">
+                  <div className={`
+                  bg-[#f0f0f0] rounded-lg p-2
+                  ${isMobile ? 'mb-16' : ''} // Add margin bottom on mobile to account for nav bar
+                `}>
+                  {/* Add reply preview */}
+                  {replyingTo && (
+                    <div className="bg-gray-200 p-2 mb-2 rounded-lg flex justify-between items-start">
+                      <div>
+                        <div className="text-sm font-medium text-[#176cf7]">
+                          Replying to {replyingTo.username}
+                        </div>
+                        <div className="text-sm text-gray-600 truncate">
+                          {replyingTo.content}
+                        </div>
+                      </div>
+                      <button onClick={() => setReplyingTo(null)}>
+                        <X size={16} className="text-gray-500" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="relative">
+                      <button 
+                        type="button"
+                        className="p-2 hover:bg-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-[#176cf7]"
+                        onClick={() => setShowAttachmentOptions(!showAttachmentOptions)}
+                      >
+                        <Paperclip size={20} className="text-gray-600" />
+                      </button>
+                      {showAttachmentOptions && (
+                        <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg py-2 z-50">
+                          <button
+                            type="button"
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                            onClick={() => handleAttachment('image')}
+                          >
+                            <ImageIcon size={16} />
+                            <span>Image</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                            onClick={() => handleAttachment('file')}
+                          >
+                            <File size={16} />
+                            <span>File</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={message}
+                      onChange={handleMessageChange}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      placeholder="Type a new message"
+                      className="flex-1 bg-transparent outline-none text-sm p-2 rounded"
+                    />
+
+                    {/* Emoji Button and Picker */}
+                    <div className="relative" ref={emojiPickerRef}>
+                      <button 
+                        type="button"
+                        className="p-2 hover:bg-gray-200 rounded"
+                        onClick={() => setShowEmoji(!showEmoji)}
+                      >
+                        <Smile size={20} className="text-gray-600" />
+                      </button>
+                      
+                      {showEmoji && (
+                        <div className="absolute bottom-full right-0 mb-2">
+                          <div className="relative bg-white rounded-lg shadow-lg">
+                            <button
+                              className="absolute right-2 top-2 p-1 hover:bg-gray-100 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowEmoji(false);
+                              }}
+                            >
+                              <X size={16} />
+                            </button>
+                            <EmojiPicker
+                              onEmojiClick={handleEmojiClick}
+                              autoFocusSearch={false}
+                              searchDisabled
+                              skinTonesDisabled
+                              height={350}
+                              width={280}
+                              previewConfig={{
+                                showPreview: false
+                              }}
+                              lazyLoadEmojis={true}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={sendMessage}
+                      disabled={!message.trim()}
+                      className={`
+                        p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#176cf7]
+                        ${message.trim() ? 'hover:bg-gray-200' : 'opacity-50 cursor-not-allowed'}
+                      `}
+                    >
+                      <Send size={20} className="text-[#176cf7]" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                  <MessageSquare size={48} className="mx-auto text-gray-400 mb-4" />
+                  <h2 className="text-xl font-medium text-gray-600">
+                    Select a chat to start messaging
+                  </h2>
+                  <p className="text-gray-500 mt-2">
+                    Choose a user from the list to begin a conversation
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center">
-              <MessageSquare size={48} className="mx-auto text-gray-400 mb-4" />
-              <h2 className="text-xl font-medium text-gray-600">
-                Select a chat to start messaging
-              </h2>
-              <p className="text-gray-500 mt-2">
-                Choose a user from the list to begin a conversation
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -1,0 +1,32 @@
+.fill_white {
+	path {
+		fill: var(--neutral-50);
+	}
+}
+
+.fill_success {
+	path {
+		fill: var(--success-400);
+	}
+}
+
+.fill_danger {
+	path {
+		fill: var(--error-400);
+	}
+}
+
+.icon_success {
+	path {
+		stroke: #0fbb81;
+	}
+}
+
+.icon_error {
+	circle {
+		stroke: #ee4343;
+	}
+	rect {
+		fill: #ee4343;
+	}
+}
