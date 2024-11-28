@@ -5,6 +5,9 @@ module.exports = {
     ],
     theme: {
       extend: {
+        screens: {
+          sm: { max: "600px" }
+        },
         colors: {
           primary: {
             DEFAULT: '#2F855A',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import io from "socket.io-client";
 import EmojiPicker from "emoji-picker-react";
+import axios from "axios";
 import {
   Copy,
   Forward,
@@ -12,9 +13,6 @@ import {
   Pin,
   BadgeCheck,
   ChevronDown,
-} from "lucide-react";
-import axios from "axios";
-import {
   Search,
   Paperclip,
   Smile,
@@ -25,6 +23,8 @@ import {
   File,
   X,
 } from "lucide-react";
+import toast from "./store/zustand/toast";
+import Toast from "./components/Toast/Toast";
 
 const socket = io("http://localhost:3001");
 
@@ -40,6 +40,7 @@ const formatTime = (date) => {
 };
 
 function App() {
+  const { dataToast, setDataToast, setShowToast, showToast } = toast();
   // States
   const [username, setUsername] = useState("");
   const [userId, setUserId] = useState(null);
@@ -1060,6 +1061,15 @@ function App() {
     }
   };
 
+  const handleChangeProfile = () => {
+    setDataToast({
+      type: "error",
+      message:
+        "Nama baru saja diperbarui. Penggantian nama selanjutnya dapat dilakukan dalam 30 hari lagi",
+    });
+    setShowToast(true);
+  };
+
   // Add useEffect to load pinned chats from localStorage
   useEffect(() => {
     const savedPinnedChats = localStorage.getItem("pinnedChats");
@@ -1635,7 +1645,7 @@ function App() {
                   onClick={() => setIsSearchOpen(true)}
                   className="p-2 hover:bg-gray-100 rounded-full"
                 >
-                  <Search size={20} className="text-gray-600" />
+                  <X size={20} />
                 </button>
               </div> */}
               <div className="flex flex-col items-center gap-[2px]">
@@ -1690,7 +1700,7 @@ function App() {
               {showScrollButton && (
                 <button
                   onClick={scrollToBottom}
-                  className="fixed bottom-24  left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded-full shadow-lg transition-all duration-300 z-50"
+                  className="fixed left-[60%] bottom-[25%] transform -translate-x-1/2 bg-[#ebebeb] text-black p-2 rounded-full shadow-lg transition-all duration-300 z-50"
                 >
                   <ChevronDown size={24} />
                 </button>
@@ -1878,9 +1888,7 @@ function App() {
                             )}
                             {/* templet jika reply pesan atasnya */}
 
-                            <MessageContent
-                              content={msg.content}
-                            />
+                            <MessageContent content={msg.content} />
                           </p>
                         </div>
                         <div
@@ -2028,21 +2036,6 @@ function App() {
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={sendMessage}
-                  disabled={!message.trim()}
-                  className={`
-                    p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#176cf7]
-                    ${
-                      message.trim()
-                        ? "hover:bg-gray-200"
-                        : "opacity-50 cursor-not-allowed"
-                    }
-                  `}
-                >
-                  <Send size={20} className="text-[#176cf7]" />
-                </button>
               </div>
             </div>
           </>
@@ -2059,86 +2052,103 @@ function App() {
             </div>
           </div>
         )}
+        ;
       </div>
     </div>
   );
 }
-
 export default App;
-const MessageContent = ({ content }) => {
+
+const MessageContent = ({ content, messageId }) => {
   const contentRef = useRef(null);
-  const [showReadMore, setShowReadMore] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [truncatedContent, setTruncatedContent] = useState('');
+  const [truncatedContent, setTruncatedContent] = useState("");
+  const [showReadMore, setShowReadMore] = useState(false);
+
+  const calculateTruncatedContent = useCallback(() => {
+    const lineHeight = parseInt(
+      window.getComputedStyle(contentRef.current).lineHeight
+    );
+    const maxLines = Math.floor(256 / lineHeight);
+    const words = content.split(" ");
+    let result = "";
+    let lines = 1;
+    let testDiv = document.createElement("div");
+
+    testDiv.style.cssText = window.getComputedStyle(contentRef.current).cssText;
+    testDiv.style.width = `${contentRef.current.clientWidth}px`;
+    testDiv.style.position = "absolute";
+    testDiv.style.visibility = "hidden";
+    document.body.appendChild(testDiv);
+
+    for (let i = 0; i < words.length; i++) {
+      const previousContent = result;
+      result += (i === 0 ? "" : " ") + words[i];
+      testDiv.textContent = result;
+
+      if (testDiv.clientHeight / lineHeight > maxLines - 1) {
+        document.body.removeChild(testDiv);
+        return previousContent;
+      }
+    }
+
+    document.body.removeChild(testDiv);
+    return result;
+  }, [content]);
 
   useEffect(() => {
     if (contentRef.current) {
-      const element = contentRef.current;
-      const shouldShowReadMore = element.scrollHeight > 256;
-
-      if (shouldShowReadMore && !isExpanded) {
-        // Hitung karakter yang muat dalam 256px
-        const wordsArray = content.split(' ');
-        let currentHeight = 0;
-        let truncatedText = '';
-        const tempDiv = document.createElement('div');
-        tempDiv.style.cssText = window.getComputedStyle(element).cssText;
-        document.body.appendChild(tempDiv);
-
-        for (let i = 0; i < wordsArray.length; i++) {
-          const word = wordsArray[i];
-          truncatedText += (i === 0 ? '' : ' ') + word;
-          tempDiv.textContent = truncatedText;
-
-          if (tempDiv.offsetHeight > 256) {
-            // Mundur beberapa kata untuk memastikan ada ruang untuk "... Read more"
-            const backTrack = wordsArray.slice(0, Math.max(0, i - 3)).join(' ');
-            setTruncatedContent(backTrack);
-            break;
-          }
-        }
-
-        document.body.removeChild(tempDiv);
-      }
+      const shouldShowReadMore = contentRef.current.scrollHeight > 256;
       setShowReadMore(shouldShowReadMore);
+
+      if (shouldShowReadMore) {
+        const truncated = calculateTruncatedContent();
+        setTruncatedContent(truncated);
+      }
     }
-  }, [content, isExpanded]);
+  }, [content, calculateTruncatedContent]);
 
   const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
+    if (isExpanded) {
+      setIsExpanded(false);
+    } else {
+      setIsExpanded(true);
+    }
   };
 
   return (
-    <div>
-      <p ref={contentRef} className={`text-sm break-words ${!isExpanded ? "max-h-64 overflow-hidden" : ""}`}>
-        {isExpanded ? (
-          <>
-            {content}
-            <button
-              onClick={toggleExpand}
-              className="text-xs font-medium hover:underline focus:outline-none inline-flex items-center"
+    <div
+      ref={contentRef}
+      className={`text-sm break-words ${
+        !isExpanded ? "max-h-64 overflow-hidden" : ""
+      }`}
+    >
+      {isExpanded ? (
+        <>
+          {content}
+          <button
+            onClick={toggleExpand}
+            className="font-bold border-b inline"
+          >
+            Show less
+          </button>
+        </>
+      ) : (
+        <>
+          {showReadMore ? truncatedContent : content}
+          {showReadMore && (
+            <>
+              <span className="inline">...</span>
+              <button
+                onClick={toggleExpand}
+                className="font-bold border-b inline ml-2"
               >
-              ... Show less
-            </button>
-          </>
-        ) : (
-          <>
-            {showReadMore ? (
-              <>
-                {truncatedContent}
-                <button
-                  onClick={toggleExpand}
-                  className="text-xs font-medium hover:underline focus:outline-none inline-flex items-center"
-                >
-                  ... Read more
-                </button>
-              </>
-            ) : (
-              content
-            )}
-          </>
-        )}
-      </p>
+                Read more
+              </button>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
-}
+};
