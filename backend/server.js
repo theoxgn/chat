@@ -26,7 +26,7 @@ const messages = new Map();
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'chatbaru',
+  database: 'muatchat',
   password: 'postgres',
   port: 5432,
 });

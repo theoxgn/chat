@@ -27,11 +27,13 @@ import {
   Settings,
   Image as ImageIcon,
   File,
-  X,
-} from "lucide-react";
-import toast from "./store/zustand/toast";
-import Toast from "./components/Toast/Toast";
+  X
+} from 'lucide-react';
+import toast from './store/zustand/toast';
 import Modal from "./components/Modal/Modal";
+import Toast from './components/Toast/Toast';
+import Bubble from './components/Bubble/Bubble';
+import IconComponent from './components/IconComponent/IconComponent';
 
 const socket = io("http://localhost:3001");
 
@@ -45,6 +47,11 @@ const formatTime = (date) => {
     })
     .replace(":", ".");
 };
+
+const formatDate = (date) => {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString([]);
+}
 
 function App() {
   const { dataToast, setDataToast, setShowToast, showToast } = toast();
@@ -119,6 +126,9 @@ function App() {
     isOpen: false,
     message: null,
   });
+  const isVerified = true
+  const referralCode = "WVC8LIIC"
+  let currentDate = null
 
   // Functions
   const scrollToBottom = useCallback(() => {
@@ -1638,17 +1648,15 @@ function App() {
           </div>
         </div>
 
-        {/* Main Chat Area */}
-        <div
-          className={`flex-1 flex flex-col bg-white relative ${
-            isMobile && showSidebar ? "hidden" : "flex"
-          }`}
-        >
-          {activeRoom ? (
-            <>
-              {/* Chat Header - Modified for mobile */}
-              <div className="h-fit border-b flex items-center justify-between px-5 py-3">
-                <div className="flex items-center space-x-3">
+          {/* Main Chat Area */}
+          <div className={`flex-1 flex flex-col bg-white relative ${
+            isMobile && showSidebar ? 'hidden' : 'flex'
+          }`}>
+            {activeRoom ? (
+              <>
+                {/* Chat Header - Modified for mobile */}
+                <div className="h-16 border-b flex items-center justify-between px-5 py-[9px]">
+                  <div className="flex items-center space-x-3">
                   {isMobile && (
                     <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4 z-50">
                       <button
@@ -1695,6 +1703,31 @@ function App() {
                     <img src="/icons/goldtransporter.png" loading="lazy" />
                     Gold Transporter
                   </span> */}
+                  {/* Add the search button here */}
+                  {/* <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => setIsSearchOpen(true)} 
+                      className="p-2 hover:bg-gray-100 rounded-full"
+                    >
+                      <Search size={20} className="text-gray-600" />
+                    </button>
+                  </div> */}
+                  <div className='flex flex-col gap-y-0.5'>
+                    {isVerified ? (
+                      <Bubble classname="!h-[22px] !py-1 !px-2 flex flex-row gap-x-1 bg-[#DCFFCD] border-none">
+                        <IconComponent
+                          src="/icons/verified.svg"
+                          height={14}
+                          width={14}
+                        />
+                        <span className='text-[#36B100] font-semibold text-[12px] leading-[14.4px]'>Verified</span>
+                      </Bubble>
+                    ) : null}
+                    {referralCode ? (
+                      <Bubble classname="!h-[22px] !py-[5px] !px-2 text-center bg-[#D1E2FD] border-none">
+                        <div className='text-[#176CF7] font-semibold text-[12px] leading-[14.4px] w-[60px]'>{referralCode}</div>
+                      </Bubble>
+                    ) : null}
                   </div>
                 </div>
                 {/* Add the search button here */}
@@ -1780,219 +1813,201 @@ function App() {
                 )}
 
                 {isUploading && <UploadProgress progress={uploadProgress} />}
-
-                {messages.map((msg, index) => (
-                  <div key={index}>
-                    {msg.messageType === "file" ? (
-                      <FileMessage
-                        msg={msg}
-                        isOwn={msg.user_id === userId}
-                        readStatus={messageStatuses[msg.id]}
-                      />
-                    ) : (
-                      <div
-                        data-message-id={msg.id}
-                        data-message-time={new Date(msg.created_at).getTime()}
-                        className={`flex ${
-                          msg.user_id === userId
-                            ? "justify-end"
-                            : "justify-start"
-                        } group`}
-                      >
-                        {/* dp sender di chat
-                      {msg.user_id !== userId && (
-                        <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
-                          {msg.username?.[0].toUpperCase()}
-                        </div>
-                      )} */}
-                        <div className="relative">
-                          {/* Message Actions Button - Positioned relative to message */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowMessageActions(
-                                msg.id === showMessageActions ? null : msg.id
-                              );
-                            }}
-                            className={`absolute top-2 ${
-                              msg.user_id === userId
-                                ? "left-0 -ml-8"
-                                : "right-0 -mr-8"
-                            }
-                            opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-gray-200
-                            transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-300`}
-                          >
-                            <MoreVertical size={16} className="text-gray-500" />
-                          </button>
-
-                          {/* Message Actions Menu - Positioned relative to button */}
-                          {showMessageActions === msg.id && (
-                            <div
-                              className={`absolute ${
-                                msg.user_id === userId
-                                  ? "-left-[60%]"
-                                  : "left-[120%]"
-                              }
-                            top-0 mt-8 w-48 bg-white rounded-lg shadow-lg py-1 z-50 message-actions`}
-                            >
-                              <button
-                                onClick={() => handleCopyMessage(msg.content)}
-                                className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                              >
-                                {showCopied ? (
-                                  <>
-                                    <CheckCheck
-                                      size={16}
-                                      className="text-green-500"
-                                    />
-                                    <span>Copied!</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy size={16} />
-                                    <span>Copy</span>
-                                  </>
-                                )}
-                              </button>
-
-                              <button
-                                onClick={() => handleForwardMessage(msg)}
-                                className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                              >
-                                <Forward size={16} />
-                                <span>Forward</span>
-                              </button>
-
-                              <button
-                                onClick={() => handleReplyMessage(msg)}
-                                className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
-                              >
-                                <Reply size={16} />
-                                <span>Reply</span>
-                              </button>
-
-                              {msg.user_id === userId && (
-                                <button
-                                  onClick={() => handleDeleteMessage(msg.id)}
-                                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2 text-red-500"
-                                >
-                                  <Trash2 size={16} />
-                                  <span>Delete</span>
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          <div
-                            className={`max-w-[352px] rounded-lg p-3 ${
-                              msg.user_id === userId
-                                ? "bg-[#176cf7] text-white !rounded-br-none"
-                                : "bg-[#d1e2fd] text-black !rounded-bl-none"
-                            }`}
-                          >
-                            <div className={`text-sm font-bold mb-[6px]`}>
-                              {msg.username}
-                            </div>
-                            {msg.replied_to_message && (
-                              <div
-                                className={`text-sm mb-2 p-2 rounded cursor-pointer ${
-                                  msg.user_id === userId
-                                    ? "bg-[#002D84] bg-opacity-50"
-                                    : "bg-gray-200"
-                                }`}
-                                onClick={() => {
-                                  const repliedMessageEl =
-                                    document.querySelector(
-                                      `[data-message-id="${msg.replied_to_message.id}"]`
-                                    );
-                                  if (repliedMessageEl) {
-                                    repliedMessageEl.scrollIntoView({
-                                      behavior: "smooth",
-                                      block: "center",
-                                    });
-                                    repliedMessageEl.classList.add(
-                                      "message-highlight"
-                                    );
-                                    setTimeout(() => {
-                                      repliedMessageEl.classList.remove(
-                                        "message-highlight"
-                                      );
-                                    }, 2000);
-                                  }
-                                }}
-                              >
-                                <div className="font-medium text-xs flex items-center gap-1">
-                                  <Reply size={12} />
-                                  Reply to {msg.replied_to_message.username}
-                                </div>
-                                <div className="truncate mt-1 opacity-90">
-                                  {msg.replied_to_message.content}
-                                </div>
-                              </div>
-                            )}
-                            <p className="text-sm break-words">
-                              {/* templet jika reply pesan atasnya */}
-                              {msg.replied_to_message && (
-                                <div
-                                  className={`text-sm mb-2 p-2 rounded cursor-pointer ${
-                                    msg.user_id === userId
-                                      ? "bg-[#002D84] bg-opacity-50"
-                                      : "bg-gray-200"
-                                  }`}
-                                >
-                                  <div className="font-medium text-xs flex items-center gap-1">
-                                    <Reply size={12} />
-                                    Reply to {msg.replied_to_message.username}
-                                  </div>
-                                  <div className="mt-1 opacity-90">
-                                    {msg.replied_to_message.content}
-                                  </div>
-                                </div>
-                              )}
-                              {/* templet jika reply pesan atasnya */}
-
-                              <MessageContent content={msg.content} />
-                            </p>
-                          </div>
-                          <div
-                            className={`text-xs mt-1 opacity-70 flex items-center ${
-                              msg.user_id !== userId
-                                ? "justify-start"
-                                : "justify-end"
-                            } space-x-1`}
-                          >
-                            {/* nanti diubah key api sbg penanda diteruskan */}
-                            {msg.content
-                              .toLowerCase()
-                              .includes("forwarded") && (
-                              <div className="flex items-center gap-1">
-                                <img src="/icons/forwardedmsg.svg" />
-                                <span className="text-[10px] font-medium">
-                                  Diteruskan
-                                </span>
-                                <div className="rounded-full w-1 h-1 bg-[#ebebeb]" />
-                              </div>
-                            )}
-                            <span className="text-[10px] font-medium">
-                              {formatTime(msg.created_at)}
-                            </span>
-                            {msg.user_id === userId && (
-                              <ReadReceipt
-                                status={
-                                  messageStatuses[msg.id]?.read
-                                    ? "read"
-                                    : messageStatuses[msg.id]?.delivered
-                                    ? "delivered"
-                                    : "sent"
-                                }
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                <div className='flex'>
+                  <div 
+                    className='bg-white p-3 rounded-md border border-[#EBEBEB] mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'
+                  >
+                    <span className='font-bold'>Daffa</span> telah mengubah nama menjadi <span className='font-bold'>Daffa Toldo</span>
                   </div>
-                ))}
+                </div>
+
+                {messages.map((msg, index) => {
+                  const today = new Date()
+                  const yesterday = new Date()
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  const isYesterday = formatDate(yesterday) === formatDate(msg.created_at)
+                  const isToday = formatDate(today) === formatDate(msg.created_at)
+                  const showDate = formatDate(msg.created_at) !== formatDate(currentDate)
+                  currentDate = formatDate(msg.created_at)
+              
+                  const isOwnMessage = msg.user_id === userId
+                  return (
+                    <>
+                      {(isYesterday && showDate) ? (
+                        <div className='flex'>
+                          <div className='mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'>Kemarin</div>
+                        </div>
+                      ) : null}
+                      {(isToday && showDate) ? (
+                        <div className='flex'>
+                          <div className='mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'>Hari Ini</div>
+                        </div>
+                      ) : null}
+                      {(!(isYesterday || isToday) && showDate) ? (
+                        <div className='flex'>
+                          <div className='mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'>{formatDate(currentDate)}</div>
+                        </div>
+                      ) : null}
+                      <div className='group' key={index}>
+                        {msg.messageType === "file" ? (
+                          <FileMessage
+                            msg={msg}
+                            isOwn={isOwnMessage} 
+                            readStatus={messageStatuses[msg.id]}
+                          />
+                        ) : (
+                          <div
+                            data-message-id={msg.id}
+                            data-message-time={new Date(msg.created_at).getTime()}
+                            className={`flex ${
+                              isOwnMessage
+                                ? "justify-end"
+                                : "justify-start"
+                            } group`}
+                          >
+                            {/* dp sender di chat
+                          {msg.user_id !== userId && (
+                            <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
+                              {msg.username?.[0].toUpperCase()}
+                            </div>
+                          )} */}
+                            <div className="relative">
+                              <div
+                                className={`max-w-[352px] rounded-lg p-3 ${
+                                  msg.user_id === userId
+                                    ? "bg-[#176cf7] text-white !rounded-br-none"
+                                    : "bg-[#d1e2fd] text-black !rounded-bl-none"
+                                }`}
+                              >
+                                <div className='flex flex-row justify-between items-center'>
+                                  <span className={`${isOwnMessage ? "text-white" : "text-[#1B1B1B]"} font-bold text-[12px] leading-[14.4px]`}>{msg.username}</span>
+                                  <IconComponent
+                                    classname={`hidden ${isOwnMessage ? "group-hover:block" : ""} cursor-pointer ${showMessageActions === msg.id ? "block" : ""}`}
+                                    src="/icons/triple-dots.svg"
+                                    size="small"
+                                    onclick={() => setShowMessageActions(showMessageActions => {
+                                      return msg.id === showMessageActions ? null : msg.id
+                                    })}
+                                  />
+                                </div>
+                                {msg.replied_to_message && (
+                                  <div
+                                    className={`text-sm mb-2 p-2 rounded cursor-pointer ${
+                                      msg.user_id === userId
+                                        ? "bg-[#002D84] bg-opacity-50"
+                                        : "bg-gray-200"
+                                    }`}
+                                    onClick={() => {
+                                      const repliedMessageEl =
+                                        document.querySelector(
+                                          `[data-message-id="${msg.replied_to_message.id}"]`
+                                        );
+                                      if (repliedMessageEl) {
+                                        repliedMessageEl.scrollIntoView({
+                                          behavior: "smooth",
+                                          block: "center",
+                                        });
+                                        repliedMessageEl.classList.add(
+                                          "message-highlight"
+                                        );
+                                        setTimeout(() => {
+                                          repliedMessageEl.classList.remove(
+                                            "message-highlight"
+                                          );
+                                        }, 2000);
+                                      }
+                                    }}
+                                  >
+                                    <div className="font-medium text-xs flex items-center gap-1">
+                                      <Reply size={12} />
+                                      Reply to {msg.replied_to_message.username}
+                                    </div>
+                                    <div className="truncate mt-1 opacity-90">
+                                      {msg.replied_to_message.content}
+                                    </div>
+                                  </div>
+                                )}
+                                <p className="text-sm break-words">
+                                  {/* templet jika reply pesan atasnya */}
+                                  {msg.replied_to_message && (
+                                    <div
+                                      className={`text-sm mb-2 p-2 rounded cursor-pointer ${
+                                        msg.user_id === userId
+                                          ? "bg-[#002D84] bg-opacity-50"
+                                          : "bg-gray-200"
+                                      }`}
+                                    >
+                                      <div className="font-medium text-xs flex items-center gap-1">
+                                        <Reply size={12} />
+                                        Reply to {msg.replied_to_message.username}
+                                      </div>
+                                      <div className="mt-1 opacity-90">
+                                        {msg.replied_to_message.content}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {/* templet jika reply pesan atasnya */}
+    
+                                  <MessageContent content={msg.content} />
+                                </p>
+                                {showMessageActions === msg.id ? (
+                                  <div className='message-actions absolute w-[109px] bottom-[calc(100%_-_36px)] right-9 rounded-md bg-white border border-[#176CF7] flex flex-col'>
+                                    <div className='px-3 py-2 cursor-pointer'>
+                                      <span className='font-medium text-[12px] leading-[16.8px]'>Ubah Pesan</span>
+                                    </div>
+                                    <div className='px-3 py-2 cursor-pointer'>
+                                      <span className='font-medium text-[12px] leading-[16.8px]'>Teruskan Pesan</span>
+                                    </div>
+                                    <div className='px-3 py-2 cursor-pointer'>
+                                      <span className='font-medium text-[12px] leading-[16.8px]'>Balas Pesan</span>
+                                    </div>
+                                    <div className='px-3 py-2 cursor-pointer'>
+                                      <span className='font-medium text-[12px] leading-[16.8px]'>Hapus Pesan</span>
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div
+                                className={`text-xs mt-1 opacity-70 flex items-center ${
+                                  msg.user_id !== userId
+                                    ? "justify-start"
+                                    : "justify-end"
+                                } space-x-1`}
+                              >
+                                {/* nanti diubah key api sbg penanda diteruskan */}
+                                {msg.content
+                                  .toLowerCase()
+                                  .includes("forwarded") && (
+                                  <div className="flex items-center gap-1">
+                                    <img src="/icons/forwardedmsg.svg" />
+                                    <span className="text-[10px] font-medium">
+                                      Diteruskan
+                                    </span>
+                                    <div className="rounded-full w-1 h-1 bg-[#ebebeb]" />
+                                  </div>
+                                )}
+                                <span className="text-[10px] font-medium">
+                                  {formatTime(msg.created_at)}
+                                </span>
+                                {msg.user_id === userId && (
+                                  <ReadReceipt
+                                    status={
+                                      messageStatuses[msg.id]?.read
+                                        ? "read"
+                                        : messageStatuses[msg.id]?.delivered
+                                        ? "delivered"
+                                        : "sent"
+                                    }
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )
+                })}
 
                 {/* Typing Indicator */}
                 {activeRoom && otherUserTyping && (
@@ -2115,6 +2130,7 @@ function App() {
                   </div>
                 </div>
               </div>
+            </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center bg-gray-50">

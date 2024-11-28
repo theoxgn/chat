@@ -25,15 +25,15 @@ const Toast = ({ classname, type, children = "Toast", onclick, iconSrc }) => {
   return (
     <>
       <div
-        className={`sm:w-auto sm:bottom-[147px] sm:left-0 sm:right-0 sm:mx-4 flex gap-[4px] items-center justify-between w-[440px] h-fit leading-[14.4px] font-semibold text-[12px] rounded-[6px] py-[15px] px-[12px] border text-neutral-900 fixed bottom-[75px] right-[25px] transform transition-all duration-500 ease-in-out ${
+        className={`sm:w-auto sm:bottom-[147px] sm:left-0 sm:right-0 sm:mx-4 flex gap-[4px] items-center justify-between w-[440px] h-fit leading-[14.4px] font-semibold text-[12px] rounded-[6px] p-[12px] border text-neutral-900 fixed bottom-[75px] right-[25px] transform transition-all duration-500 ease-in-out ${
           showToast ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
         } ${
-          type == "success"
+          type === "success"
             ? "bg-[#fff2e6] border-[#0fbb81]"
             : "bg-[#ffe9ed] border-[#ee4343]"
         } ${classname}`}
       >
-        <div className="flex items-center w-[380px] gap-[12px]">
+        <div className="flex items-center w-[350px] gap-[12px]">
           <div className="w-5">
             <IconComponent
               classname={
