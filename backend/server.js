@@ -18,16 +18,16 @@ const io = new Server(server, {
 // Store typing status in memory
 const typingUsers = new Map();
 // Track online users
-const onlineUsers = new Map(); 
+const onlineUsers = new Map();
 // Store messages with read status
-const messages = new Map(); 
+const messages = new Map();
 
 // PostgreSQL connection
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'chatbaru',
-  password: 'user',
+  password: 'postgres',
   port: 5432,
 });
 
@@ -50,22 +50,22 @@ io.on('connection', (socket) => {
         onlineUsers.delete(userId);
         io.emit('user_status_change', { userId, online: false });
     });
-  
+
     socket.on('user_connected', (userId) => {
       socket.userId = userId;
       io.emit('user_connected');
     });
-  
+
     socket.on('join_room', async (data) => {
       const { userId, roomId } = data;
       socket.join(roomId);
-      
+
       try {
         const result = await pool.query(
           'SELECT EXISTS(SELECT 1 FROM chat_participants WHERE user_id = $1 AND room_id = $2)',
           [userId, roomId]
         );
-        
+
         if (!result.rows[0].exists) {
           await pool.query(
             'INSERT INTO chat_participants (user_id, room_id) VALUES ($1, $2)',
@@ -76,24 +76,24 @@ io.on('connection', (socket) => {
         console.error('Error joining room:', error);
       }
     });
-  
+
     socket.on('send_message', async (data) => {
       const { roomId, userId, content } = data;
-      
+
       try {
         const result = await pool.query(
-          `INSERT INTO messages (room_id, user_id, content) 
-           VALUES ($1, $2, $3) 
+          `INSERT INTO messages (room_id, user_id, content)
+           VALUES ($1, $2, $3)
            RETURNING *, (SELECT username FROM users WHERE id = $2)`,
           [roomId, userId, content]
         );
-        
+
         io.to(roomId).emit('receive_message', result.rows[0]);
       } catch (error) {
         console.error('Error sending message:', error);
       }
     });
-  
+
     socket.on('disconnect', () => {
          // Find and remove disconnected user
         for (const [userId, socketId] of onlineUsers.entries()) {
@@ -112,7 +112,7 @@ io.on('connection', (socket) => {
 
 app.post('/api/rooms', async (req, res) => {
     const { user1Id, user2Id } = req.body;
-    
+
     try {
       // First check if a room already exists for these users
       const existingRoomQuery = `
@@ -122,26 +122,26 @@ app.post('/api/rooms', async (req, res) => {
         JOIN chat_participants p2 ON r.id = p2.room_id
         WHERE p1.user_id = $1 AND p2.user_id = $2
       `;
-      
+
       const existingRoom = await pool.query(existingRoomQuery, [user1Id, user2Id]);
-      
+
       if (existingRoom.rows.length > 0) {
         return res.json(existingRoom.rows[0]);
       }
-      
+
       // If no room exists, create a new one
       const result = await pool.query(
         'INSERT INTO chat_rooms DEFAULT VALUES RETURNING *'
       );
-      
+
       const roomId = result.rows[0].id;
-      
+
       // Add both users to the room
       await pool.query(
         'INSERT INTO chat_participants (user_id, room_id) VALUES ($1, $2), ($3, $2)',
         [user1Id, roomId, user2Id]
       );
-      
+
       res.json(result.rows[0]);
     } catch (error) {
       console.error('Error creating/finding room:', error);
@@ -153,10 +153,10 @@ app.get('/api/messages/:roomId', async (req, res) => {
     const { roomId } = req.params;
     try {
       const result = await pool.query(
-        `SELECT m.*, u.username 
-         FROM messages m 
-         JOIN users u ON m.user_id = u.id 
-         WHERE room_id = $1 
+        `SELECT m.*, u.username
+         FROM messages m
+         JOIN users u ON m.user_id = u.id
+         WHERE room_id = $1
          ORDER BY m.created_at ASC`,
         [roomId]
       );
@@ -173,38 +173,38 @@ const checkUserExists = async (username) => {
     );
     return result.rows[0];
   };
-  
+
 // Updated users endpoint with better handling
 app.post('/api/users', async (req, res) => {
     const { username } = req.body;
-    
+
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
     }
-  
+
     try {
       // First check if user exists
       const existingUser = await checkUserExists(username);
       if (existingUser) {
         return res.json(existingUser); // Return existing user instead of creating new one
       }
-  
+
       // Create new user
       const result = await pool.query(
         'INSERT INTO users (username) VALUES ($1) RETURNING id, username',
         [username]
       );
-      
+
       res.json(result.rows[0]);
     } catch (error) {
       console.error('Database error:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
 });
-  
+
   // Add a route to get all users (useful for debugging)
 app.get('/api/users', async (req, res) => {
     try {
@@ -215,17 +215,17 @@ app.get('/api/users', async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
 });
-  
+
 // Add a route to reset the sequence if needed
 app.post('/api/admin/reset-sequence', async (req, res) => {
     try {
       // Get the maximum id from the users table
       const result = await pool.query('SELECT MAX(id) FROM users');
       const maxId = result.rows[0].max || 0;
-  
+
       // Reset the sequence to the max id + 1
       await pool.query(`ALTER SEQUENCE users_id_seq RESTART WITH ${maxId + 1}`);
-      
+
       res.json({ message: 'Sequence reset successfully', next_id: maxId + 1 });
     } catch (error) {
       console.error('Database error:', error);
@@ -257,13 +257,13 @@ const fileFilter = (req, file, cb) => {
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ];
-    
+
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('Invalid file type'), false);
     }
-};  
+};
 
 const upload = multer({
     storage: storage,
@@ -278,11 +278,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
-  
+
       const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-      
+
       // You might want to save file info to your database here
-      
+
       res.json({
         success: true,
         fileUrl: fileUrl,
@@ -299,32 +299,32 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 // Test route to verify server is running
 app.get('/', (req, res) => {
     res.json({ message: 'Server is running!' });
-    
+
 });
-  
+
 // Typing status endpoint
 app.post('/api/typing', (req, res) => {
     console.log('Received typing update:', req.body); // Debug log
-    
+
     const { roomId, userId, typing } = req.body;
-    
+
     if (!roomId || !userId) {
-      return res.status(400).json({ 
-        error: 'Missing required fields' 
+      return res.status(400).json({
+        error: 'Missing required fields'
       });
     }
-  
+
     const roomKey = `room:${roomId}`;
     let roomTyping = typingUsers.get(roomKey) || new Set();
-  
+
     if (typing) {
       roomTyping.add(userId);
     } else {
       roomTyping.delete(userId);
     }
-  
+
     typingUsers.set(roomKey, roomTyping);
-  
+
     // Auto-remove typing status after 3 seconds
     setTimeout(() => {
       const currentRoom = typingUsers.get(roomKey);
@@ -337,28 +337,28 @@ app.post('/api/typing', (req, res) => {
         }
       }
     }, 3000);
-  
+
     res.json({
       success: true,
       typingUsers: Array.from(roomTyping)
     });
 });
-  
+
 
 // Get typing status
 app.get('/api/typing/:roomId', (req, res) => {
     const roomKey = `room:${req.params.roomId}`;
     const roomTyping = typingUsers.get(roomKey) || new Set();
-    
+
     res.json({
       typingUsers: Array.from(roomTyping)
     });
 });
-  
+
   // Messages endpoint
 app.post('/api/messages', (req, res) => {
     const { roomId, userId, content } = req.body;
-    
+
     // Here you would typically save to database
     const message = {
       id: Date.now(),
@@ -367,7 +367,7 @@ app.post('/api/messages', (req, res) => {
       content,
       created_at: new Date()
     };
-  
+
     res.json(message);
 });
 
@@ -380,14 +380,14 @@ app.get('/api/users/online', (req, res) => {
 // Update message read status
 app.post('/api/messages/read', async (req, res) => {
     const { roomId, userId, messageIds } = req.body;
-    
+
     try {
       // Update read status in database
       await pool.query(
         'UPDATE messages SET read = true, read_at = NOW() WHERE id = ANY($1) AND user_id != $2',
         [messageIds, userId]
       );
-  
+
       // Emit read receipt event
       io.to(roomId).emit('messages_read', {
         roomId,
@@ -395,7 +395,7 @@ app.post('/api/messages/read', async (req, res) => {
         messageIds,
         readAt: new Date()
       });
-  
+
       res.json({ success: true });
     } catch (error) {
       console.error('Error marking messages as read:', error);
@@ -406,7 +406,7 @@ app.post('/api/messages/read', async (req, res) => {
   // Get unread messages count
 app.get('/api/messages/unread/:userId', async (req, res) => {
     const { userId } = req.params;
-    
+
     try {
       const result = await pool.query(
         'SELECT room_id, COUNT(*) as count FROM messages WHERE user_id != $1 AND read = false GROUP BY room_id',
@@ -422,7 +422,7 @@ app.get('/api/messages/unread/:userId', async (req, res) => {
   // Add pin chat endpoint
 app.post('/api/chats/pin', async (req, res) => {
   const { userId, roomId } = req.body;
-  
+
   try {
     await pool.query(
       'INSERT INTO pinned_chats (user_id, room_id) VALUES ($1, $2) ON CONFLICT (user_id, room_id) DO NOTHING',
@@ -437,7 +437,7 @@ app.post('/api/chats/pin', async (req, res) => {
 // Add unpin chat endpoint
 app.delete('/api/chats/pin', async (req, res) => {
   const { userId, roomId } = req.body;
-  
+
   try {
     await pool.query(
       'DELETE FROM pinned_chats WHERE user_id = $1 AND room_id = $2',
@@ -452,10 +452,10 @@ app.delete('/api/chats/pin', async (req, res) => {
 // Get pinned chats endpoint
 app.get('/api/chats/pin/:userId', async (req, res) => {
   const { userId } = req.params;
-  
+
   try {
     const result = await pool.query(
-      `SELECT pc.*, cr.*, u.username as other_user_name 
+      `SELECT pc.*, cr.*, u.username as other_user_name
        FROM pinned_chats pc
        JOIN chat_rooms cr ON pc.room_id = cr.id
        JOIN chat_participants cp ON cr.id = cp.room_id
@@ -475,11 +475,11 @@ app.get('/api/messages/search/:roomId', async (req, res) => {
   try {
     const roomId = parseInt(req.params.roomId);
     const searchQuery = req.query.query;
-    
+
     // Input validation
     if (isNaN(roomId) || !searchQuery) {
-      return res.status(400).json({ 
-        error: 'Valid room ID and search query are required' 
+      return res.status(400).json({
+        error: 'Valid room ID and search query are required'
       });
     }
 
@@ -487,10 +487,10 @@ app.get('/api/messages/search/:roomId', async (req, res) => {
     console.log('Searching messages:', { roomId, searchQuery });
 
     const result = await pool.query(
-      `SELECT m.*, u.username 
-       FROM messages m 
-       JOIN users u ON m.user_id = u.id 
-       WHERE m.room_id = $1 
+      `SELECT m.*, u.username
+       FROM messages m
+       JOIN users u ON m.user_id = u.id
+       WHERE m.room_id = $1
        AND LOWER(m.content) LIKE LOWER($2)
        ORDER BY m.created_at DESC`,
       [roomId, `%${searchQuery}%`]
@@ -513,9 +513,9 @@ app.get('/api/messages/search/:roomId', async (req, res) => {
 
   } catch (error) {
     console.error('Error searching messages:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to search messages',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -523,14 +523,14 @@ app.get('/api/messages/search/:roomId', async (req, res) => {
 // Delete message endpoint
 app.delete('/api/messages/:messageId', async (req, res) => {
   const { messageId } = req.params;
-  
+
   try {
     // Optional: Add additional checks here (e.g., message ownership)
     await pool.query(
       'DELETE FROM messages WHERE id = $1',
       [messageId]
     );
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting message:', error);
@@ -541,7 +541,7 @@ app.delete('/api/messages/:messageId', async (req, res) => {
 // Forward message endpoint
 app.post('/api/messages/forward', async (req, res) => {
   const { messageId, targetRoomId, userId } = req.body;
-  
+
   try {
     const result = await pool.query(
       `INSERT INTO messages (room_id, user_id, content, forwarded_from)
