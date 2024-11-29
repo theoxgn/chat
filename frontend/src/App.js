@@ -50,7 +50,7 @@ const formatTime = (date) => {
 
 const formatDate = (date) => {
   if (!date) return '';
-  return new Date(date).toLocaleDateString([]);
+  return new Date(date).toLocaleDateString();
 }
 
 function App() {
@@ -660,9 +660,10 @@ function App() {
 
   const FileMessage = ({ msg, isOwn }) => {
     // Check file type
-    const isImage = msg.fileType?.startsWith("image/");
-    const isVideo = msg.fileType?.startsWith("video/");
-    const isPDF = msg.fileType?.includes("pdf");
+    const isImage = true
+    // const isImage = msg.fileType?.startsWith('image/');
+    const isVideo = msg.fileType?.startsWith('video/');
+    const isPDF = msg.fileType?.includes('pdf');
 
     // Progress state for download
     const [downloadProgress, setDownloadProgress] = useState(0);
@@ -685,7 +686,8 @@ function App() {
         });
 
         // Create blob link to download
-        const blob = new Blob([response.data]);
+        // const blob = new Blob([response.data]);
+        const blob = response.data
         const downloadUrl = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = downloadUrl;
@@ -704,35 +706,63 @@ function App() {
     };
 
     return (
-      <div className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-2`}>
-        {!isOwn && (
+      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
+        {/* {!isOwn && (
           <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
             {msg.username?.[0].toUpperCase()}
           </div>
-        )}
-        <div
-          className={`
-          max-w-[70%] rounded-lg p-3
-          ${isOwn ? "bg-[#176cf7] text-white" : "bg-[#f0f0f0]"}
-        `}
-        >
-          {!isOwn && (
+        )} */}
+        <div className={`max-w-[352px] p-3 flex flex-col gap-y-2.5 rounded-[10px] ${isOwn ? "rounded-ee-none bg-[#176CF7]" : "rounded-es-none bg-[#D1E2FD]"} relative`}>
+          {/* {!isOwn && (
             <div className="text-sm font-semibold mb-1">{msg.username}</div>
-          )}
-
+          )} */}
+          
           <div className="space-y-2">
             {/* Image Preview */}
             {isImage ? (
-              <div className="relative group">
+              <div className="relative group flex flex-col gap-y-1.5">
+                <div className='flex flex-row justify-between items-center'>
+                  <span className={`${isOwn ? "text-white" : "text-[#1B1B1B]"} font-bold text-[12px] leading-[14.4px]`}>{msg.username}</span>
+                  <IconComponent
+                    classname={`hidden ${isOwn ? "group-hover:block" : ""} cursor-pointer ${showMessageActions === msg.id ? "block" : ""}`}
+                    src="/icons/triple-dots.svg"
+                    size="small"
+                    onclick={() => setShowMessageActions(showMessageActions => {
+                      return msg.id === showMessageActions ? null : msg.id
+                    })}
+                  />
+                </div>
                 <img
-                  src={msg.fileUrl}
+                  src="http://localhost:3001/uploads/test.png"
+                  // src={msg.fileUrl}
                   alt={msg.fileName}
                   className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90"
-                  onClick={() => window.open(msg.fileUrl, "_blank")}
+                  // onClick={() => window.open(msg.fileUrl, '_blank')}
+                  onClick={() => window.open("http://localhost:3001/uploads/test.png", '_blank')}
                 />
-                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className={`${isOwn ? "text-white" : "text-[#1B1B1B]"} font-medium text-[12px] leading-[15.6px]`}>
+                  {msg.content}
+                </p>
+                {showMessageActions === msg.id ? (
+                  <div className='message-actions absolute w-[109px] bottom-[calc(100%_-_36px)] right-9 rounded-md bg-white border border-[#176CF7] flex flex-col'>
+                    <div className='px-3 py-2 cursor-pointer'>
+                      <span className='font-medium text-[12px] leading-[16.8px]'>Ubah Pesan</span>
+                    </div>
+                    <div className='px-3 py-2 cursor-pointer'>
+                      <span className='font-medium text-[12px] leading-[16.8px]'>Teruskan Pesan</span>
+                    </div>
+                    <div className='px-3 py-2 cursor-pointer'>
+                      <span className='font-medium text-[12px] leading-[16.8px]'>Balas Pesan</span>
+                    </div>
+                    <div className='px-3 py-2 cursor-pointer'>
+                      <span className='font-medium text-[12px] leading-[16.8px]'>Hapus Pesan</span>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="absolute z-[2] bottom-8 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
+                    onClick={() => handleDownload("http://localhost:3001/uploads/file-1732762560617-403859396.png", "file-1732762560617-403859396.png")}
+                    // onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
                     disabled={isDownloading}
                     className="p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-white"
                   >
@@ -846,9 +876,9 @@ function App() {
             )}
 
             {/* Message Time */}
-            <div className="text-xs opacity-70 text-right">
+            {/* <div className="text-xs opacity-70 text-right">
               {formatTime(msg.created_at)}
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -1714,7 +1744,7 @@ function App() {
                   </div> */}
                   <div className='flex flex-col gap-y-0.5'>
                     {isVerified ? (
-                      <Bubble classname="!h-[22px] !py-1 !px-2 flex flex-row gap-x-1 bg-[#DCFFCD] border-none">
+                      <Bubble classname="!h-[22px] !py-1 !px-2 flex flex-row gap-x-1 !bg-[#DCFFCD] border-none">
                         <IconComponent
                           src="/icons/verified.svg"
                           height={14}
@@ -1724,7 +1754,7 @@ function App() {
                       </Bubble>
                     ) : null}
                     {referralCode ? (
-                      <Bubble classname="!h-[22px] !py-[5px] !px-2 text-center bg-[#D1E2FD] border-none">
+                      <Bubble classname="!h-[22px] !py-[5px] !px-2 text-center !bg-[#D1E2FD] border-none">
                         <div className='text-[#176CF7] font-semibold text-[12px] leading-[14.4px] w-[60px]'>{referralCode}</div>
                       </Bubble>
                     ) : null}
@@ -1849,9 +1879,9 @@ function App() {
                         </div>
                       ) : null}
                       <div className='group' key={index}>
-                        {msg.messageType === "file" ? (
-                          <FileMessage
-                            msg={msg}
+                        {msg.messageType !== 'file' ? (
+                          <FileMessage 
+                            msg={msg} 
                             isOwn={isOwnMessage} 
                             readStatus={messageStatuses[msg.id]}
                           />
