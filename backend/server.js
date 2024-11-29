@@ -79,7 +79,7 @@ io.on('connection', (socket) => {
 
     socket.on('send_message', async (data) => {
       const { roomId, userId, content } = data;
-
+      console.log(data, " aku di server")
       try {
         const result = await pool.query(
           `INSERT INTO messages (room_id, user_id, content)
