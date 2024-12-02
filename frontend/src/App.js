@@ -34,6 +34,7 @@ import Modal from "./components/Modal/Modal";
 import Toast from './components/Toast/Toast';
 import Bubble from './components/Bubble/Bubble';
 import IconComponent from './components/IconComponent/IconComponent';
+import Sidebar from "./components/Sidebar/Sidebar";
 
 const socket = io("http://localhost:3001");
 
@@ -126,9 +127,9 @@ function App() {
     isOpen: false,
     message: null,
   });
-  const isVerified = true
-  const referralCode = "WVC8LIIC"
-  let currentDate = null
+  const isVerified = true;
+  const referralCode = "WVC8LIIC";
+  let currentDate = null;
 
   // Functions
   const scrollToBottom = useCallback(() => {
@@ -660,10 +661,10 @@ function App() {
 
   const FileMessage = ({ msg, isOwn }) => {
     // Check file type
-    const isImage = true
+    const isImage = true;
     // const isImage = msg.fileType?.startsWith('image/');
-    const isVideo = msg.fileType?.startsWith('video/');
-    const isPDF = msg.fileType?.includes('pdf');
+    const isVideo = msg.fileType?.startsWith("video/");
+    const isPDF = msg.fileType?.includes("pdf");
 
     // Progress state for download
     const [downloadProgress, setDownloadProgress] = useState(0);
@@ -687,7 +688,7 @@ function App() {
 
         // Create blob link to download
         // const blob = new Blob([response.data]);
-        const blob = response.data
+        const blob = response.data;
         const downloadUrl = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = downloadUrl;
@@ -706,30 +707,48 @@ function App() {
     };
 
     return (
-      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
+      <div className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-2`}>
         {/* {!isOwn && (
           <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm mr-2">
             {msg.username?.[0].toUpperCase()}
           </div>
         )} */}
-        <div className={`max-w-[352px] p-3 flex flex-col gap-y-2.5 rounded-[10px] ${isOwn ? "rounded-ee-none bg-[#176CF7]" : "rounded-es-none bg-[#D1E2FD]"} relative`}>
+        <div
+          className={`max-w-[352px] p-3 flex flex-col gap-y-2.5 rounded-[10px] ${
+            isOwn
+              ? "rounded-ee-none bg-[#176CF7]"
+              : "rounded-es-none bg-[#D1E2FD]"
+          } relative`}
+        >
           {/* {!isOwn && (
             <div className="text-sm font-semibold mb-1">{msg.username}</div>
           )} */}
-          
+
           <div className="space-y-2">
             {/* Image Preview */}
             {isImage ? (
               <div className="relative group flex flex-col gap-y-1.5">
-                <div className='flex flex-row justify-between items-center'>
-                  <span className={`${isOwn ? "text-white" : "text-[#1B1B1B]"} font-bold text-[12px] leading-[14.4px]`}>{msg.username}</span>
+                <div className="flex flex-row justify-between items-center">
+                  <span
+                    className={`${
+                      isOwn ? "text-white" : "text-[#1B1B1B]"
+                    } font-bold text-[12px] leading-[14.4px]`}
+                  >
+                    {msg.username}
+                  </span>
                   <IconComponent
-                    classname={`hidden ${isOwn ? "group-hover:block" : ""} cursor-pointer ${showMessageActions === msg.id ? "block" : ""}`}
+                    classname={`hidden ${
+                      isOwn ? "group-hover:block" : ""
+                    } cursor-pointer ${
+                      showMessageActions === msg.id ? "block" : ""
+                    }`}
                     src="/icons/triple-dots.svg"
                     size="small"
-                    onclick={() => setShowMessageActions(showMessageActions => {
-                      return msg.id === showMessageActions ? null : msg.id
-                    })}
+                    onclick={() =>
+                      setShowMessageActions((showMessageActions) => {
+                        return msg.id === showMessageActions ? null : msg.id;
+                      })
+                    }
                   />
                 </div>
                 <img
@@ -738,30 +757,52 @@ function App() {
                   alt={msg.fileName}
                   className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90"
                   // onClick={() => window.open(msg.fileUrl, '_blank')}
-                  onClick={() => window.open("http://localhost:3001/uploads/test.png", '_blank')}
+                  onClick={() =>
+                    window.open(
+                      "http://localhost:3001/uploads/test.png",
+                      "_blank"
+                    )
+                  }
                 />
-                <p className={`${isOwn ? "text-white" : "text-[#1B1B1B]"} font-medium text-[12px] leading-[15.6px]`}>
+                <p
+                  className={`${
+                    isOwn ? "text-white" : "text-[#1B1B1B]"
+                  } font-medium text-[12px] leading-[15.6px]`}
+                >
                   {msg.content}
                 </p>
                 {showMessageActions === msg.id ? (
-                  <div className='message-actions absolute w-[109px] bottom-[calc(100%_-_36px)] right-9 rounded-md bg-white border border-[#176CF7] flex flex-col'>
-                    <div className='px-3 py-2 cursor-pointer'>
-                      <span className='font-medium text-[12px] leading-[16.8px]'>Ubah Pesan</span>
+                  <div className="message-actions absolute w-[109px] bottom-[calc(100%_-_36px)] right-9 rounded-md bg-white border border-[#176CF7] flex flex-col">
+                    <div className="px-3 py-2 cursor-pointer">
+                      <span className="font-medium text-[12px] leading-[16.8px]">
+                        Ubah Pesan
+                      </span>
                     </div>
-                    <div className='px-3 py-2 cursor-pointer'>
-                      <span className='font-medium text-[12px] leading-[16.8px]'>Teruskan Pesan</span>
+                    <div className="px-3 py-2 cursor-pointer">
+                      <span className="font-medium text-[12px] leading-[16.8px]">
+                        Teruskan Pesan
+                      </span>
                     </div>
-                    <div className='px-3 py-2 cursor-pointer'>
-                      <span className='font-medium text-[12px] leading-[16.8px]'>Balas Pesan</span>
+                    <div className="px-3 py-2 cursor-pointer">
+                      <span className="font-medium text-[12px] leading-[16.8px]">
+                        Balas Pesan
+                      </span>
                     </div>
-                    <div className='px-3 py-2 cursor-pointer'>
-                      <span className='font-medium text-[12px] leading-[16.8px]'>Hapus Pesan</span>
+                    <div className="px-3 py-2 cursor-pointer">
+                      <span className="font-medium text-[12px] leading-[16.8px]">
+                        Hapus Pesan
+                      </span>
                     </div>
                   </div>
                 ) : null}
                 <div className="absolute z-[2] bottom-8 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={() => handleDownload("http://localhost:3001/uploads/file-1732762560617-403859396.png", "file-1732762560617-403859396.png")}
+                    onClick={() =>
+                      handleDownload(
+                        "http://localhost:3001/uploads/file-1732762560617-403859396.png",
+                        "file-1732762560617-403859396.png"
+                      )
+                    }
                     // onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
                     disabled={isDownloading}
                     className="p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-white"
@@ -1398,47 +1439,77 @@ function App() {
   };
 
   const handleForward = async (selectedUserId, message) => {
-  try {
-    // Find the room with the selected user
-    const response = await axios.post("http://localhost:3001/api/rooms", {
-      user1Id: userId,
-      user2Id: selectedUserId,
-    });
+    try {
+      // Find the room with the selected user
+      const response = await axios.post("http://localhost:3001/api/rooms", {
+        user1Id: userId,
+        user2Id: selectedUserId,
+      });
 
-    const roomId = response.data.id;
-    const selectedUser = users.find(user => user.id === selectedUserId);
+      const roomId = response.data.id;
+      const selectedUser = users.find((user) => user.id === selectedUserId);
 
-    // Emit the forwarded message
-    socket.emit("send_message", {
-      roomId: roomId,
-      userId: userId,
-      content: `Forwarded: ${message.content}`,
-      created_at: new Date(),
-      username: username,
-    });
+      // Emit the forwarded message
+      socket.emit("send_message", {
+        roomId: roomId,
+        userId: userId,
+        content: `Forwarded: ${message.content}`,
+        created_at: new Date(),
+        username: username,
+      });
 
-    // Show success toast
-    setDataToast({
-      type: "success",
-      message: "Message forwarded successfully"
-    });
-    setShowToast(true);
+      // Show success toast
+      setDataToast({
+        type: "success",
+        message: "Message forwarded successfully",
+      });
+      setShowToast(true);
 
-    // Close forward modal
-    setForwardMessage({ isOpen: false, message: null });
+      // Close forward modal
+      setForwardMessage({ isOpen: false, message: null });
 
-    // Open chat with selected user
-    startChat(selectedUser);
+      // Open chat with selected user
+      startChat(selectedUser);
+    } catch (error) {
+      console.error("Error forwarding message:", error);
+      setDataToast({
+        type: "error",
+        message: "Failed to forward message",
+      });
+      setShowToast(true);
+    }
+  };
 
-  } catch (error) {
-    console.error("Error forwarding message:", error);
-    setDataToast({
-      type: "error",
-      message: "Failed to forward message"
-    });
-    setShowToast(true);
-  }
-};
+  // favorit
+  // Tambahkan state untuk favorite chats dan toggle collapse
+  const [favoriteChats, setFavoriteChats] = useState(new Set());
+  const [showFavorites, setShowFavorites] = useState(true);
+
+  // Tambahkan fungsi untuk mengelola favorite chat
+  const toggleFavorite = (userId, e) => {
+    e.stopPropagation();
+    const newFavorites = new Set(favoriteChats);
+    if (newFavorites.has(userId)) {
+      newFavorites.delete(userId);
+    } else {
+      newFavorites.add(userId);
+    }
+    setFavoriteChats(newFavorites);
+    localStorage.setItem("favoriteChats", JSON.stringify([...newFavorites]));
+  };
+
+  // Load favorite chats from localStorage on mount
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("favoriteChats");
+    if (savedFavorites) {
+      setFavoriteChats(new Set(JSON.parse(savedFavorites)));
+    }
+  }, []);
+  // favorit
+
+  const [expandedMenus, setExpandedMenus] = useState({
+    intermodal: false,
+  });
 
   if (!userId) {
     return (
@@ -1499,33 +1570,16 @@ function App() {
           {dataToast?.message}
         </Toast>
       ) : null}
-      <div className='py-6 px-18'>
+      <div className="py-6 px-18">
         <div className="flex h-[calc(100vh_-_48px)] bg-[#f5f5f5] rounded-lg">
           {/* Desktop Navigation Sidebar */}
-          <div className="hidden lg:flex w-[268px] bg-[#F8F8F8] p-3 flex-col justify-between">
-            <div className='space-y-3'>
-              <div className='pb-3 border-b-[1px] border-b-[#EBEBEB]'>
-                Sesuatu
-              </div>
-              <div className='flex flex-row items-center gap-x-3'>
-                <div className='rounded-[48px] border-[#EBEBEB] border-[1px] p-[9px] space-y-0'>
-                  <img src="/icons/favourite-blue.svg" />
-                </div>
-                <span className='font-semibold text-[14px] leading-[16.8px] text-[#1B1B1B] items-center'>Obrolan Favorit</span>
-              </div>
-            </div>
-            <div className='pt-3 border-t-[1px] border-t-[#EBEBEB] flex flex-row justify-between items-center'>
-              <div className='flex flex-row gap-x-3'>
-                <div>
-                  Foto
-                </div>
-                <span>Daffa</span>
-              </div>
-              <span className='underline font-medium text-[12px] leading-[14.4px] text-[#176CF7] cursor-pointer' onClick={handleChangeProfile}>
-                Ubah Nama
-              </span>
-            </div>
-          </div>
+          <Sidebar
+            username={username}
+            onLogout={handleLogout}
+            favoriteChats={Array.from(favoriteChats)}
+            onSelectChat={startChat}
+            activeChat={activeRoom?.otherUser?.id}
+          />
 
           {/* Chat List Sidebar */}
           <div
@@ -1570,7 +1624,9 @@ function App() {
                   }
                 >
                   <SlidersHorizontal
-                    color={`${filterChatList.value !== "" ? "#fff" : "#868686"}`}
+                    color={`${
+                      filterChatList.value !== "" ? "#fff" : "#868686"
+                    }`}
                     size={16}
                   />
                 </div>
@@ -1661,15 +1717,24 @@ function App() {
                             </div>
                             <div className="w-full flex justify-between items-center gap-2">
                               <p className="text-xs font-medium text-[#868686] truncate w-[186px]">
-                                Click to start chatting chatting chatting chatting
-                                chatting
+                                Click to start chatting chatting chatting
+                                chatting chatting
                               </p>
-                              {isPinned && (
+                              {isPinned ? (
                                 <Pin
                                   color="#868686"
                                   fill="#868686"
                                   size={16}
-                                  className="rotate-45"
+                                  className="rotate-45 cursor-pointer"
+                                  onClick={(e) => handlePinChat(user, e)}
+                                />
+                              ) : (
+                                <Pin
+                                  color="#868686"
+                                  fill="#868686"
+                                  size={16}
+                                  className="rotate-45 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+                                  onClick={(e) => handlePinChat(user, e)}
                                 />
                               )}
                               {unreadCounts[user.id] > 0 && (
@@ -1692,73 +1757,85 @@ function App() {
             </div>
           </div>
 
-            {/* Main Chat Area */}
-            <div className={`flex-1 flex flex-col bg-white relative ${
-              isMobile && showSidebar ? 'hidden' : 'flex'
-            }`}>
-              {activeRoom ? (
-                <>
-                  {/* Chat Header - Modified for mobile */}
-                  <div className="h-16 border-b flex items-center justify-between px-5 py-[9px]">
-                    <div className="flex items-center space-x-3">
+          {/* Main Chat Area */}
+          <div
+            className={`flex-1 flex flex-col bg-white relative ${
+              isMobile && showSidebar ? "hidden" : "flex"
+            }`}
+          >
+            {activeRoom ? (
+              <>
+                {/* Chat Header - Modified for mobile */}
+                <div className="h-16 border-b flex items-center justify-between px-5 py-[9px]">
+                  <div className="flex items-center space-x-3">
                     {isMobile && (
-                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4 z-50">
-                          <button 
-                            onClick={() => setShowSidebar(true)}
-                            className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
-                          >
-                            <MessageSquare size={24} />
-                          </button>
-                          <button 
-                            onClick={handleLogout}
-                            className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
-                          >
-                            <Settings size={24} />
-                          </button>
-                        </div>
-                      )}
-                      <div className="relative">
-                        <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
-                          {activeRoom.otherUser.username[0].toUpperCase()}
-                        </div>
-                        <OnlineStatusIndicator isOnline={onlineUsers.has(activeRoom.otherUser.id)} />
+                      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 px-4 z-50">
+                        <button
+                          onClick={() => setShowSidebar(true)}
+                          className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
+                        >
+                          <MessageSquare size={24} />
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="p-3 text-gray-600 hover:text-[#176cf7] focus:outline-none focus:ring-2"
+                        >
+                          <Settings size={24} />
+                        </button>
                       </div>
-                      <div>
-                        <h2 className="font-semibold">{activeRoom.otherUser.username}</h2>
-                        <span className="text-xs text-gray-500">
-                          {onlineUsers.has(activeRoom.otherUser.id) ? 'online' : 'offline'}
-                        </span>
+                    )}
+                    <div className="relative">
+                      <div className="w-8 h-8 bg-[#176cf7] rounded-full flex items-center justify-center text-white text-sm">
+                        {activeRoom.otherUser.username[0].toUpperCase()}
                       </div>
+                      <OnlineStatusIndicator
+                        isOnline={onlineUsers.has(activeRoom.otherUser.id)}
+                      />
                     </div>
-                    {/* Add the search button here */}
-                    {/* <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => setIsSearchOpen(true)} 
+                    <div>
+                      <h2 className="font-semibold">
+                        {activeRoom.otherUser.username}
+                      </h2>
+                      <span className="text-xs text-gray-500">
+                        {onlineUsers.has(activeRoom.otherUser.id)
+                          ? "online"
+                          : "offline"}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Add the search button here */}
+                  {/* <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setIsSearchOpen(true)}
                         className="p-2 hover:bg-gray-100 rounded-full"
                       >
                         <Search size={20} className="text-gray-600" />
                       </button>
                     </div> */}
-                    <div className='flex flex-col gap-y-0.5'>
-                      {isVerified ? (
-                        <Bubble classname="!h-[22px] !py-1 !px-2 flex flex-row gap-x-1 !bg-[#DCFFCD] border-none">
-                          <IconComponent
-                            src="/icons/verified.svg"
-                            height={14}
-                            width={14}
-                          />
-                          <span className='text-[#36B100] font-semibold text-[12px] leading-[14.4px]'>Verified</span>
-                        </Bubble>
-                      ) : null}
-                      {referralCode ? (
-                        <Bubble classname="!h-[22px] !py-[5px] !px-2 text-center !bg-[#D1E2FD] border-none">
-                          <div className='text-[#176CF7] font-semibold text-[12px] leading-[14.4px] w-[60px]'>{referralCode}</div>
-                        </Bubble>
-                      ) : null}
-                    </div>
+                  <div className="flex flex-col gap-y-0.5">
+                    {isVerified ? (
+                      <Bubble classname="!h-[22px] !py-1 !px-2 flex flex-row gap-x-1 !bg-[#DCFFCD] border-none">
+                        <IconComponent
+                          src="/icons/verified.svg"
+                          height={14}
+                          width={14}
+                        />
+                        <span className="text-[#36B100] font-semibold text-[12px] leading-[14.4px]">
+                          Verified
+                        </span>
+                      </Bubble>
+                    ) : null}
+                    {referralCode ? (
+                      <Bubble classname="!h-[22px] !py-[5px] !px-2 text-center !bg-[#D1E2FD] border-none">
+                        <div className="text-[#176CF7] font-semibold text-[12px] leading-[14.4px] w-[60px]">
+                          {referralCode}
+                        </div>
+                      </Bubble>
+                    ) : null}
                   </div>
-                  {/* Add the search button here */}
-                  {/* <div className="flex items-center space-x-2">
+                </div>
+                {/* Add the search button here */}
+                {/* <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setIsSearchOpen(true)}
                     className="p-2 hover:bg-gray-100 rounded-full"
@@ -1826,56 +1903,65 @@ function App() {
                   )}
 
                   {isUploading && <UploadProgress progress={uploadProgress} />}
-                  <div className='flex'>
-                    <div 
-                      className='bg-white p-3 rounded-md border border-[#EBEBEB] mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'
-                    >
-                      <span className='font-bold'>Daffa</span> telah mengubah nama menjadi <span className='font-bold'>Daffa Toldo</span>
+                  <div className="flex">
+                    <div className="bg-white p-3 rounded-md border border-[#EBEBEB] mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]">
+                      <span className="font-bold">Daffa</span> telah mengubah
+                      nama menjadi{" "}
+                      <span className="font-bold">Daffa Toldo</span>
                     </div>
                   </div>
 
                   {messages.map((msg, index) => {
-                    const today = new Date()
-                    const yesterday = new Date()
+                    const today = new Date();
+                    const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
-                    const isYesterday = formatDate(yesterday) === formatDate(msg.created_at)
-                    const isToday = formatDate(today) === formatDate(msg.created_at)
-                    const showDate = formatDate(msg.created_at) !== formatDate(currentDate)
-                    currentDate = formatDate(msg.created_at)
-                
-                    const isOwnMessage = msg.user_id === userId
+                    const isYesterday =
+                      formatDate(yesterday) === formatDate(msg.created_at);
+                    const isToday =
+                      formatDate(today) === formatDate(msg.created_at);
+                    const showDate =
+                      formatDate(msg.created_at) !== formatDate(currentDate);
+                    currentDate = formatDate(msg.created_at);
+
+                    const isOwnMessage = msg.user_id === userId;
                     return (
                       <>
-                        {(isYesterday && showDate) ? (
-                          <div className='flex'>
-                            <div className='mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'>Kemarin</div>
+                        {isYesterday && showDate ? (
+                          <div className="flex">
+                            <div className="mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]">
+                              Kemarin
+                            </div>
                           </div>
                         ) : null}
-                        {(isToday && showDate) ? (
-                          <div className='flex'>
-                            <div className='mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'>Hari Ini</div>
+                        {isToday && showDate ? (
+                          <div className="flex">
+                            <div className="mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]">
+                              Hari Ini
+                            </div>
                           </div>
                         ) : null}
-                        {(!(isYesterday || isToday) && showDate) ? (
-                          <div className='flex'>
-                            <div className='mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]'>{formatDate(currentDate)}</div>
+                        {!(isYesterday || isToday) && showDate ? (
+                          <div className="flex">
+                            <div className="mx-auto font-medium text-[12px] leading[14.4px] text-[#868686]">
+                              {formatDate(currentDate)}
+                            </div>
                           </div>
                         ) : null}
-                        <div className='group' key={index}>
-                          {msg.messageType !== 'file' ? (
-                            <FileMessage 
-                              msg={msg} 
-                              isOwn={isOwnMessage} 
+                        <div className="group" key={index}>
+                          {msg.messageType === "file" ? (
+                            <FileMessage
+                              msg={msg}
+                              isOwn={isOwnMessage}
                               readStatus={messageStatuses[msg.id]}
                             />
                           ) : (
                             <div
                               data-message-id={msg.id}
-                              data-message-time={new Date(msg.created_at).getTime()}
+                              data-message-time={new Date(
+                                msg.created_at
+                              ).getTime()}
                               className={`flex ${
-                                isOwnMessage
-                                  ? "justify-end"
-                                  : "justify-start"
+                                isOwnMessage ? "justify-end" : "justify-start"
                               } group`}
                             >
                               {/* dp sender di chat
@@ -1892,15 +1978,35 @@ function App() {
                                       : "bg-[#d1e2fd] text-black !rounded-bl-none"
                                   }`}
                                 >
-                                  <div className='flex flex-row justify-between items-center'>
-                                    <span className={`${isOwnMessage ? "text-white" : "text-[#1B1B1B]"} font-bold text-[12px] leading-[14.4px]`}>{msg.username}</span>
+                                  <div className="flex flex-row justify-between items-center">
+                                    <span
+                                      className={`${
+                                        isOwnMessage
+                                          ? "text-white"
+                                          : "text-[#1B1B1B]"
+                                      } font-bold text-[12px] leading-[14.4px]`}
+                                    >
+                                      {msg.username}
+                                    </span>
                                     <IconComponent
-                                      classname={`hidden ${isOwnMessage ? "group-hover:block" : ""} cursor-pointer ${showMessageActions === msg.id ? "block" : ""}`}
+                                      classname={`hidden ${
+                                        isOwnMessage ? "group-hover:block" : ""
+                                      } cursor-pointer ${
+                                        showMessageActions === msg.id
+                                          ? "block"
+                                          : ""
+                                      }`}
                                       src="/icons/triple-dots.svg"
                                       size="small"
-                                      onclick={() => setShowMessageActions(showMessageActions => {
-                                        return msg.id === showMessageActions ? null : msg.id
-                                      })}
+                                      onclick={() =>
+                                        setShowMessageActions(
+                                          (showMessageActions) => {
+                                            return msg.id === showMessageActions
+                                              ? null
+                                              : msg.id;
+                                          }
+                                        )
+                                      }
                                     />
                                   </div>
                                   {msg.replied_to_message && (
@@ -1933,7 +2039,8 @@ function App() {
                                     >
                                       <div className="font-medium text-xs flex items-center gap-1">
                                         <Reply size={12} />
-                                        Reply to {msg.replied_to_message.username}
+                                        Reply to{" "}
+                                        {msg.replied_to_message.username}
                                       </div>
                                       <div className="truncate mt-1 opacity-90">
                                         {msg.replied_to_message.content}
@@ -1952,7 +2059,8 @@ function App() {
                                       >
                                         <div className="font-medium text-xs flex items-center gap-1">
                                           <Reply size={12} />
-                                          Reply to {msg.replied_to_message.username}
+                                          Reply to{" "}
+                                          {msg.replied_to_message.username}
                                         </div>
                                         <div className="mt-1 opacity-90">
                                           {msg.replied_to_message.content}
@@ -1960,22 +2068,30 @@ function App() {
                                       </div>
                                     )}
                                     {/* templet jika reply pesan atasnya */}
-      
+
                                     <MessageContent content={msg.content} />
                                   </p>
                                   {showMessageActions === msg.id ? (
-                                    <div className='message-actions absolute w-[109px] bottom-[calc(100%_-_36px)] right-9 rounded-md bg-white border border-[#176CF7] flex flex-col'>
-                                      <div className='px-3 py-2 cursor-pointer'>
-                                        <span className='font-medium text-[12px] leading-[16.8px]'>Ubah Pesan</span>
+                                    <div className="message-actions absolute w-[109px] bottom-[calc(100%_-_36px)] right-9 rounded-md bg-white border border-[#176CF7] flex flex-col">
+                                      <div className="px-3 py-2 cursor-pointer">
+                                        <span className="font-medium text-[12px] leading-[16.8px]">
+                                          Ubah Pesan
+                                        </span>
                                       </div>
-                                      <div className='px-3 py-2 cursor-pointer'>
-                                        <span className='font-medium text-[12px] leading-[16.8px]'>Teruskan Pesan</span>
+                                      <div className="px-3 py-2 cursor-pointer">
+                                        <span className="font-medium text-[12px] leading-[16.8px]">
+                                          Teruskan Pesan
+                                        </span>
                                       </div>
-                                      <div className='px-3 py-2 cursor-pointer'>
-                                        <span className='font-medium text-[12px] leading-[16.8px]'>Balas Pesan</span>
+                                      <div className="px-3 py-2 cursor-pointer">
+                                        <span className="font-medium text-[12px] leading-[16.8px]">
+                                          Balas Pesan
+                                        </span>
                                       </div>
-                                      <div className='px-3 py-2 cursor-pointer'>
-                                        <span className='font-medium text-[12px] leading-[16.8px]'>Hapus Pesan</span>
+                                      <div className="px-3 py-2 cursor-pointer">
+                                        <span className="font-medium text-[12px] leading-[16.8px]">
+                                          Hapus Pesan
+                                        </span>
                                       </div>
                                     </div>
                                   ) : null}
@@ -2019,7 +2135,7 @@ function App() {
                           )}
                         </div>
                       </>
-                    )
+                    );
                   })}
 
                   {/* Typing Indicator */}
