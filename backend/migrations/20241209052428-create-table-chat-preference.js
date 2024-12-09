@@ -1,20 +1,12 @@
 'use strict';
 module.exports = {
     up: async (queryInterface, Sequelize) => {
-        await queryInterface.createTable('ChatRoomParticipants', {
+        await queryInterface.createTable('ChatPreferences', {
             id: {
                 allowNull: false,
                 primaryKey: true,
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4
-            },
-            chat_room_id: {
-                type: Sequelize.UUID,
-                allowNull: false,
-                references: {
-                    model: 'ChatRooms',
-                    key: 'id'
-                }
             },
             user_id: {
                 type: Sequelize.UUID,
@@ -49,6 +41,6 @@ module.exports = {
         });
     },
     down: async (queryInterface, Sequelize) => {
-        await queryInterface.dropTable('ChatRoomParticipants');
+        await queryInterface.dropTable('ChatPreferences');
     }
 };

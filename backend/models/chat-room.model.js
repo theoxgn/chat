@@ -46,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: 'updated_at'
     });
 
-    ChatRoom.associate = function(models) {
+    ChatRoom.associate = function (models) {
         // associations can be defined here
         ChatRoom.belongsTo(models.ChatMenu, {
             foreignKey: 'menu_id',
@@ -63,10 +63,6 @@ module.exports = (sequelize, DataTypes) => {
         ChatRoom.belongsTo(models.User, {
             foreignKey: 'recipient',
             as: 'recipientUser'
-        });
-        ChatRoom.hasMany(models.ChatRoomParticipant, {
-            foreignKey: 'chat_room_id',
-            as: 'participants'
         });
     };
 
