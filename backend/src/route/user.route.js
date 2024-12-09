@@ -3,7 +3,8 @@ const { Router } = require('express');
 const pool = require('../config/postgres');
 const { checkUserExists } = require('../service/user.service');
 
-const {onlineUsers} = require('../application/app');
+// Track online users
+const onlineUsers = new Map();
 
 // Create a new router
 const user_router = Router();
@@ -57,4 +58,4 @@ user_router.get('/api/users/online', (req, res) => {
 });
 
 // Export the router
-module.exports = user_router;
+module.exports = {user_router, onlineUsers};

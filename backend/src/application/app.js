@@ -4,7 +4,6 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-
 const pool = require('../config/postgres');
 
 const app = express();
@@ -18,14 +17,15 @@ const io = new Server(server, {
 
 // Store typing status in memory
 const typingUsers = new Map();
-// Track online users
-const onlineUsers = new Map();
 
-const user_router = require('../route/user.route');
+// Import routes
+const {user_router, onlineUsers} = require('../route/user.route');
+const messages_router = require('../route/message.route');
 
 app.use(cors());
 app.use(express.json());
 app.use(user_router);
+app.use(messages_router)
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -136,23 +136,6 @@ app.post('/api/rooms', async (req, res) => {
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Error creating/finding room:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/messages/:roomId', async (req, res) => {
-    const { roomId } = req.params;
-    try {
-        const result = await pool.query(
-            `SELECT m.*, u.username
-         FROM messages m
-         JOIN users u ON m.user_id = u.id
-         WHERE room_id = $1
-         ORDER BY m.created_at ASC`,
-            [roomId]
-        );
-        res.json(result.rows);
-    } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
@@ -297,64 +280,6 @@ app.get('/api/typing/:roomId', (req, res) => {
     });
 });
 
-// Messages endpoint
-app.post('/api/messages', (req, res) => {
-    const { roomId, userId, content } = req.body;
-
-    // Here you would typically save to database
-    const message = {
-        id: Date.now(),
-        roomId,
-        userId,
-        content,
-        created_at: new Date()
-    };
-
-    res.json(message);
-});
-
-
-// Update message read status
-app.post('/api/messages/read', async (req, res) => {
-    const { roomId, userId, messageIds } = req.body;
-
-    try {
-        // Update read status in database
-        await pool.query(
-            'UPDATE messages SET read = true, read_at = NOW() WHERE id = ANY($1) AND user_id != $2',
-            [messageIds, userId]
-        );
-
-        // Emit read receipt event
-        io.to(roomId).emit('messages_read', {
-            roomId,
-            userId,
-            messageIds,
-            readAt: new Date()
-        });
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Error marking messages as read:', error);
-        res.status(500).json({ error: 'Failed to update read status' });
-    }
-});
-
-// Get unread messages count
-app.get('/api/messages/unread/:userId', async (req, res) => {
-    const { userId } = req.params;
-
-    try {
-        const result = await pool.query(
-            'SELECT room_id, COUNT(*) as count FROM messages WHERE user_id != $1 AND read = false GROUP BY room_id',
-            [userId]
-        );
-        res.json(result.rows);
-    } catch (error) {
-        console.error('Error getting unread count:', error);
-        res.status(500).json({ error: 'Failed to get unread count' });
-    }
-});
 
 // Add pin chat endpoint
 app.post('/api/chats/pin', async (req, res) => {
@@ -407,96 +332,7 @@ app.get('/api/chats/pin/:userId', async (req, res) => {
     }
 });
 
-// Add this new endpoint to search messages
-app.get('/api/messages/search/:roomId', async (req, res) => {
-    try {
-        const roomId = parseInt(req.params.roomId);
-        const searchQuery = req.query.query;
-
-        // Input validation
-        if (isNaN(roomId) || !searchQuery) {
-            return res.status(400).json({
-                error: 'Valid room ID and search query are required'
-            });
-        }
-
-        // Add logging for debugging
-        console.log('Searching messages:', { roomId, searchQuery });
-
-        const result = await pool.query(
-            `SELECT m.*, u.username
-       FROM messages m
-       JOIN users u ON m.user_id = u.id
-       WHERE m.room_id = $1
-       AND LOWER(m.content) LIKE LOWER($2)
-       ORDER BY m.created_at DESC`,
-            [roomId, `%${searchQuery}%`]
-        );
-
-        // Group results by date for better organization
-        const groupedResults = result.rows.reduce((acc, message) => {
-            const date = new Date(message.created_at).toLocaleDateString();
-            if (!acc[date]) {
-                acc[date] = [];
-            }
-            acc[date].push(message);
-            return acc;
-        }, {});
-
-        res.json({
-            totalResults: result.rows.length,
-            groupedResults
-        });
-
-    } catch (error) {
-        console.error('Error searching messages:', error);
-        res.status(500).json({
-            error: 'Failed to search messages',
-            details: error.message
-        });
-    }
-});
-
-// Delete message endpoint
-app.delete('/api/messages/:messageId', async (req, res) => {
-    const { messageId } = req.params;
-
-    try {
-        // Optional: Add additional checks here (e.g., message ownership)
-        await pool.query(
-            'DELETE FROM messages WHERE id = $1',
-            [messageId]
-        );
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Error deleting message:', error);
-        res.status(500).json({ error: 'Failed to delete message' });
-    }
-});
-
-// Forward message endpoint
-app.post('/api/messages/forward', async (req, res) => {
-    const { messageId, targetRoomId, userId } = req.body;
-
-    try {
-        const result = await pool.query(
-            `INSERT INTO messages (room_id, user_id, content, forwarded_from)
-       SELECT $1, $2, content, id
-       FROM messages
-       WHERE id = $3
-       RETURNING *`,
-            [targetRoomId, userId, messageId]
-        );
-
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Error forwarding message:', error);
-        res.status(500).json({ error: 'Failed to forward message' });
-    }
-});
-
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
-module.exports = { server, onlineUsers };
+module.exports = { server, io, onlineUsers };
