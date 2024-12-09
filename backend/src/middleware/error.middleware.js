@@ -1,4 +1,4 @@
-const ResponseError = require('../response/error.response');
+const ErrorResponse = require('../response/error.response');
 
 const errorMiddleware = async (err, req, res, next) => {
     if (!err) {
@@ -6,7 +6,7 @@ const errorMiddleware = async (err, req, res, next) => {
         return;
     }
     console.log(`Error: ${err}`);
-    if (err instanceof ResponseError) {
+    if (err instanceof ErrorResponse) {
         let message = err.message;
         res.status(err.statusCode).json({
             Message: {
@@ -18,8 +18,7 @@ const errorMiddleware = async (err, req, res, next) => {
             },
             Type: req.originalUrl
         }).end();
-    }
-    else {
+    } else {
         res.status(500).json({
             Message: {
                 Code: 500,
