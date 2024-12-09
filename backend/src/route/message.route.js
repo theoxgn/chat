@@ -49,12 +49,14 @@ messagesRouter.post('/api/messages/read', async (req, res) => {
         );
 
         // Emit read receipt event
-        io.to(roomId).emit('messages_read', {
-            roomId,
-            userId,
-            messageIds,
-            readAt: new Date()
-        });
+        if (io){
+            io.to(roomId).emit('messages_read', {
+                roomId,
+                userId,
+                messageIds,
+                readAt: new Date()
+            });
+        }
 
         res.json({ success: true });
     } catch (error) {
