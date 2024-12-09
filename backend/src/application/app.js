@@ -20,13 +20,12 @@ const io = new Server(server, {
 const typingUsers = new Map();
 // Track online users
 const onlineUsers = new Map();
-// Store messages with read status
-const messages = new Map();
+
+const user_router = require('../route/user.route');
 
 app.use(cors());
 app.use(express.json());
-
-
+app.use(user_router);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -158,55 +157,6 @@ app.get('/api/messages/:roomId', async (req, res) => {
     }
 });
 
-const checkUserExists = async (username) => {
-    const result = await pool.query(
-        'SELECT id, username FROM users WHERE username = $1',
-        [username]
-    );
-    return result.rows[0];
-};
-
-// Updated users endpoint with better handling
-app.post('/api/users', async (req, res) => {
-    const { username } = req.body;
-
-    if (!username) {
-        return res.status(400).json({ error: 'Username is required' });
-    }
-
-    try {
-        // First check if user exists
-        const existingUser = await checkUserExists(username);
-        if (existingUser) {
-            return res.json(existingUser); // Return existing user instead of creating new one
-        }
-
-        // Create new user
-        const result = await pool.query(
-            'INSERT INTO users (username) VALUES ($1) RETURNING id, username',
-            [username]
-        );
-
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Database error:', error);
-        res.status(500).json({
-            error: 'Internal server error',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-    }
-});
-
-// Add a route to get all users (useful for debugging)
-app.get('/api/users', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT id, username FROM users ORDER BY id');
-        res.json(result.rows);
-    } catch (error) {
-        console.error('Database error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
 
 // Add a route to reset the sequence if needed
 app.post('/api/admin/reset-sequence', async (req, res) => {
@@ -363,11 +313,6 @@ app.post('/api/messages', (req, res) => {
     res.json(message);
 });
 
-// Add API endpoint to get online users
-app.get('/api/users/online', (req, res) => {
-    const onlineUserIds = Array.from(onlineUsers.keys());
-    res.json(onlineUserIds);
-});
 
 // Update message read status
 app.post('/api/messages/read', async (req, res) => {
@@ -554,4 +499,4 @@ app.post('/api/messages/forward', async (req, res) => {
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
-module.exports = { server };
+module.exports = { server, onlineUsers };
