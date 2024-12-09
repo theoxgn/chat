@@ -13,7 +13,7 @@ const io = new Server(server, {
     }
 });
 
-// Import routes
+// *Import routes
 const {userRouter, onlineUsers} = require('../route/user.route');
 const messagesRouter = require('../route/message.route');
 const chatRouter = require('../route/chat.route');
@@ -30,7 +30,7 @@ app.use(roomRouter);
 app.use(adminRouter);
 app.use(fileRouter);
 
-// Socket.IO connection handling
+// *Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
@@ -104,14 +104,14 @@ io.on('connection', (socket) => {
     });
 });
 
-// Test route to verify server is running
+// *Test route to verify server is running
 app.get('/', (req, res) => {
     res.json({ message: 'Server is running!' });
 
 });
 
 
-// Serve uploaded files
+// *Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
 module.exports = { server, io, onlineUsers };
