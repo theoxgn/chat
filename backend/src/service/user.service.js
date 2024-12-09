@@ -1,4 +1,5 @@
 const pool = require("../config/postgres");
+const onlineUsers = require("../store/onlineUsers.store");
 
 class UserService {
     async checkUserExists(username) {
