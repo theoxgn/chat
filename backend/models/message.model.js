@@ -61,16 +61,22 @@ module.exports = (sequelize, DataTypes) => {
             field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
+        },
+        deletedAt: {
+            field: 'deleted_at',
+            type: DataTypes.DATE
         }
     }, {
         tableName: 'Messages',
         underscored: true,
         timestamps: true,
+        paranoid: true,
         createdAt: 'created_at',
-        updatedAt: 'updated_at'
+        updatedAt: 'updated_at',
+        deletedAt: 'deleted_at'
     });
 
-    Message.associate = function(models) {
+    Message.associate = function (models) {
         // associations can be defined here
         Message.belongsTo(models.ChatRoom, {
             foreignKey: 'chat_room_id',

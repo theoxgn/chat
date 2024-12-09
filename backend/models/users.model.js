@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING
         },
         role: {
-            type:DataTypes.STRING
+            type: DataTypes.STRING
         },
         status: {
             type: DataTypes.STRING
@@ -63,17 +63,23 @@ module.exports = (sequelize, DataTypes) => {
             field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
+        },
+        deletedAt: {
+            field: 'deleted_at',
+            type: DataTypes.DATE
         }
     }, {
         tableName: 'Users',
         underscored: true,
         timestamps: true,
+        paranoid: true,
         createdAt: 'created_at',
-        updatedAt: 'updated_at'
+        updatedAt: 'updated_at',
+        deletedAt: 'deleted_at'
     });
 
     // models/user.model.js
-    User.associate = function(models) {
+    User.associate = function (models) {
         User.hasMany(models.ChatRoomParticipant, {
             foreignKey: 'user_id',
             as: 'chatRoomParticipants'
