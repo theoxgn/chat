@@ -1,10 +1,11 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+
+const pool = require('../config/postgres');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,15 +22,6 @@ const typingUsers = new Map();
 const onlineUsers = new Map();
 // Store messages with read status
 const messages = new Map();
-
-// PostgreSQL connection
-const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'chatbaru',
-    password: 'admin123*',
-    port: 5432,
-});
 
 app.use(cors());
 app.use(express.json());
