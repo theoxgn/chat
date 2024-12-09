@@ -1,9 +1,9 @@
 const { Router } = require('express');
-const messages_router = Router();
+const messagesRouter = Router();
 const { io } = require('../application/app');
 const pool = require("../config/postgres");
 
-messages_router.get('/api/messages/:roomId', async (req, res) => {
+messagesRouter.get('/api/messages/:roomId', async (req, res) => {
     const { roomId } = req.params;
     try {
         const result = await pool.query(
@@ -21,7 +21,7 @@ messages_router.get('/api/messages/:roomId', async (req, res) => {
 });
 
 // Messages endpoint
-messages_router.post('/api/messages', (req, res) => {
+messagesRouter.post('/api/messages', (req, res) => {
     const { roomId, userId, content } = req.body;
 
     // Here you would typically save to database
@@ -38,7 +38,7 @@ messages_router.post('/api/messages', (req, res) => {
 
 
 // Update message read status
-messages_router.post('/api/messages/read', async (req, res) => {
+messagesRouter.post('/api/messages/read', async (req, res) => {
     const { roomId, userId, messageIds } = req.body;
 
     try {
@@ -64,7 +64,7 @@ messages_router.post('/api/messages/read', async (req, res) => {
 });
 
 // Get unread messages count
-messages_router.get('/api/messages/unread/:userId', async (req, res) => {
+messagesRouter.get('/api/messages/unread/:userId', async (req, res) => {
     const { userId } = req.params;
 
     try {
@@ -80,7 +80,7 @@ messages_router.get('/api/messages/unread/:userId', async (req, res) => {
 });
 
 // Add this new endpoint to search messages
-messages_router.get('/api/messages/search/:roomId', async (req, res) => {
+messagesRouter.get('/api/messages/search/:roomId', async (req, res) => {
     try {
         const roomId = parseInt(req.params.roomId);
         const searchQuery = req.query.query;
@@ -130,7 +130,7 @@ messages_router.get('/api/messages/search/:roomId', async (req, res) => {
 });
 
 // Delete message endpoint
-messages_router.delete('/api/messages/:messageId', async (req, res) => {
+messagesRouter.delete('/api/messages/:messageId', async (req, res) => {
     const { messageId } = req.params;
 
     try {
@@ -148,7 +148,7 @@ messages_router.delete('/api/messages/:messageId', async (req, res) => {
 });
 
 // Forward message endpoint
-messages_router.post('/api/messages/forward', async (req, res) => {
+messagesRouter.post('/api/messages/forward', async (req, res) => {
     const { messageId, targetRoomId, userId } = req.body;
 
     try {
@@ -168,4 +168,4 @@ messages_router.post('/api/messages/forward', async (req, res) => {
     }
 });
 
-module.exports = messages_router;
+module.exports = messagesRouter;

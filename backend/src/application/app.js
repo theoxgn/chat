@@ -13,24 +13,22 @@ const io = new Server(server, {
     }
 });
 
-
-
 // Import routes
-const {user_router, onlineUsers} = require('../route/user.route');
-const messages_router = require('../route/message.route');
-const chat_router = require('../route/chat.route');
-const rooms_router = require('../route/room.route');
-const admin_router = require('../route/admin.route');
-const file_router = require('../route/file.route');
+const {userRouter, onlineUsers} = require('../route/user.route');
+const messagesRouter = require('../route/message.route');
+const chatRouter = require('../route/chat.route');
+const roomRouter = require('../route/room.route');
+const adminRouter = require('../route/admin.route');
+const fileRouter = require('../route/file.route');
 
 app.use(cors());
 app.use(express.json());
-app.use(user_router);
-app.use(messages_router)
-app.use(chat_router);
-app.use(rooms_router);
-app.use(admin_router);
-app.use(file_router);
+app.use(userRouter);
+app.use(messagesRouter)
+app.use(chatRouter);
+app.use(roomRouter);
+app.use(adminRouter);
+app.use(fileRouter);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

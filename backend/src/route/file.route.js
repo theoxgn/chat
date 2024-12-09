@@ -2,7 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const { Router } = require('express');
 
-const file_router = Router();
+const fileRouter = Router();
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -44,7 +44,7 @@ const upload = multer({
     fileFilter: fileFilter
 });
 
-file_router.post('/api/upload', upload.single('file'), async (req, res) => {
+fileRouter.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -67,4 +67,4 @@ file_router.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-module.exports = file_router;
+module.exports = fileRouter;

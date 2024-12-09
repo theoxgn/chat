@@ -2,10 +2,10 @@
 const { Router } = require('express');
 const pool = require('../config/postgres');
 
-const admin_router = Router();
+const adminRouter = Router();
 
 // Add a route to reset the sequence if needed
-admin_router.post('/api/admin/reset-sequence', async (req, res) => {
+adminRouter.post('/api/admin/reset-sequence', async (req, res) => {
     try {
         // Get the maximum id from the users table
         const result = await pool.query('SELECT MAX(id) FROM users');
@@ -21,4 +21,4 @@ admin_router.post('/api/admin/reset-sequence', async (req, res) => {
     }
 });
 
-module.exports = admin_router;
+module.exports = adminRouter;

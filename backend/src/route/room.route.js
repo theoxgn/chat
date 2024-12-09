@@ -2,8 +2,8 @@ const { Router } = require('express');
 
 const pool = require("../config/postgres");
 
-const rooms_router = Router();
-rooms_router.post('/api/rooms', async (req, res) => {
+const roomRouter = Router();
+roomRouter.post('/api/rooms', async (req, res) => {
     const { user1Id, user2Id } = req.body;
 
     try {
@@ -42,4 +42,4 @@ rooms_router.post('/api/rooms', async (req, res) => {
     }
 });
 
-module.exports = rooms_router;
+module.exports = roomRouter;

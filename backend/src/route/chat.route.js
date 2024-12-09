@@ -5,10 +5,10 @@ const pool = require("../config/postgres");
 const typingUsers = new Map();
 
 // Create a new router
-const chat_router = Router();
+const chatRouter = Router();
 
 // Typing status endpoint
-chat_router.post('/api/typing', (req, res) => {
+chatRouter.post('/api/typing', (req, res) => {
     console.log('Received typing update:', req.body); // Debug log
 
     const { roomId, userId, typing } = req.body;
@@ -51,7 +51,7 @@ chat_router.post('/api/typing', (req, res) => {
 
 
 // Get typing status
-chat_router.get('/api/typing/:roomId', (req, res) => {
+chatRouter.get('/api/typing/:roomId', (req, res) => {
     const roomKey = `room:${req.params.roomId}`;
     const roomTyping = typingUsers.get(roomKey) || new Set();
 
@@ -62,7 +62,7 @@ chat_router.get('/api/typing/:roomId', (req, res) => {
 
 
 // Add pin chat endpoint
-chat_router.post('/api/chats/pin', async (req, res) => {
+chatRouter.post('/api/chats/pin', async (req, res) => {
     const { userId, roomId } = req.body;
 
     try {
@@ -77,7 +77,7 @@ chat_router.post('/api/chats/pin', async (req, res) => {
 });
 
 // Add unpin chat endpoint
-chat_router.delete('/api/chats/pin', async (req, res) => {
+chatRouter.delete('/api/chats/pin', async (req, res) => {
     const { userId, roomId } = req.body;
 
     try {
@@ -92,7 +92,7 @@ chat_router.delete('/api/chats/pin', async (req, res) => {
 });
 
 // Get pinned chats endpoint
-chat_router.get('/api/chats/pin/:userId', async (req, res) => {
+chatRouter.get('/api/chats/pin/:userId', async (req, res) => {
     const { userId } = req.params;
 
     try {
@@ -113,4 +113,4 @@ chat_router.get('/api/chats/pin/:userId', async (req, res) => {
 });
 
 // Export the router
-module.exports = chat_router;
+module.exports = chatRouter;

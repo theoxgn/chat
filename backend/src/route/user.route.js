@@ -7,10 +7,10 @@ const { checkUserExists } = require('../service/user.service');
 const onlineUsers = new Map();
 
 // Create a new router
-const user_router = Router();
+const userRouter = Router();
 
 // Updated users endpoint with better handling
-user_router.post('/api/users', async (req, res) => {
+userRouter.post('/api/users', async (req, res) => {
     const { username } = req.body;
 
     if (!username) {
@@ -41,7 +41,7 @@ user_router.post('/api/users', async (req, res) => {
 });
 
 // Add a route to get all users (useful for debugging)
-user_router.get('/api/users', async (req, res) => {
+userRouter.get('/api/users', async (req, res) => {
     try {
         const result = await pool.query('SELECT id, username FROM users ORDER BY id');
         res.json(result.rows);
@@ -52,10 +52,10 @@ user_router.get('/api/users', async (req, res) => {
 });
 
 // Add API endpoint to get online users
-user_router.get('/api/users/online', (req, res) => {
+userRouter.get('/api/users/online', (req, res) => {
     const onlineUserIds = Array.from(onlineUsers.keys());
     res.json(onlineUserIds);
 });
 
 // Export the router
-module.exports = {user_router, onlineUsers};
+module.exports = {userRouter, onlineUsers};
