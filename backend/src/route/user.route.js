@@ -12,4 +12,4 @@ userRouter.post('/api/users', UserController.createUser);
 userRouter.get('/api/users', UserController.getAllUsers);
 userRouter.get('/api/users/online', UserController.getOnlineUsers);
 
-module.exports = {userRouter};
+module.exports = userRouter;

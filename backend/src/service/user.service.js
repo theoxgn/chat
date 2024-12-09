@@ -1,8 +1,5 @@
 const pool = require("../config/postgres");
 
-// Track online users
-const onlineUsers = new Map();
-
 class UserService {
     async checkUserExists(username) {
         const result = await pool.query(

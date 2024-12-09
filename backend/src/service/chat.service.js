@@ -1,15 +1,8 @@
-// Store typing status in memory
 const pool = require("../config/postgres");
-const typingUsers = new Map();
+const typingUsers = require("../store/typingUsers.store")
 
 class ChatService {
     async createChatTypingStatus(roomId, userId, typing) {
-        if (!roomId || !userId) {
-            return res.status(400).json({
-                error: 'Missing required fields'
-            });
-        }
-
         const roomKey = `room:${roomId}`;
         let roomTyping = typingUsers.get(roomKey) || new Set();
 

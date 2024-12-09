@@ -1,6 +1,6 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const {Server} = require('socket.io');
 const cors = require('cors');
 const pool = require('../config/postgres');
 
@@ -8,13 +8,16 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:3000","192.168.1.3:3002"],
+        origin: ["http://localhost:3000", "192.168.1.3:3002"],
         methods: ["GET", "POST"]
     }
 });
 
-// *Import routes
-const {userRouter, onlineUsers} = require('../route/user.route');
+// * Import from service
+const onlineUsers = require('../store/onlineUsers.store')
+
+// * Import routes
+const userRouter = require('../route/user.route');
 const messagesRouter = require('../route/message.route');
 const chatRouter = require('../route/chat.route');
 const roomRouter = require('../route/room.route');
@@ -37,12 +40,12 @@ io.on('connection', (socket) => {
     // Handle user online status
     socket.on('user_online', (userId) => {
         onlineUsers.set(userId, true);
-        io.emit('user_status_change', { userId, online: true });
+        io.emit('user_status_change', {userId, online: true});
     });
 
     socket.on('user_offline', (userId) => {
         onlineUsers.delete(userId);
-        io.emit('user_status_change', { userId, online: false });
+        io.emit('user_status_change', {userId, online: false});
     });
 
     socket.on('user_connected', (userId) => {
@@ -51,7 +54,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('join_room', async (data) => {
-        const { userId, roomId } = data;
+        const {userId, roomId} = data;
         socket.join(roomId);
 
         try {
@@ -72,13 +75,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send_message', async (data) => {
-        const { roomId, userId, content } = data;
+        const {roomId, userId, content} = data;
         console.log(data, " aku di server")
         try {
             const result = await pool.query(
                 `INSERT INTO messages (room_id, user_id, content)
-           VALUES ($1, $2, $3)
-           RETURNING *, (SELECT username FROM users WHERE id = $2)`,
+                 VALUES ($1, $2, $3)
+                 RETURNING *, (SELECT username FROM users WHERE id = $2)`,
                 [roomId, userId, content]
             );
 
@@ -93,7 +96,7 @@ io.on('connection', (socket) => {
         for (const [userId, socketId] of onlineUsers.entries()) {
             if (socketId === socket.id) {
                 onlineUsers.delete(userId);
-                io.emit('user_status_change', { userId, online: false });
+                io.emit('user_status_change', {userId, online: false});
                 break;
             }
         }
@@ -106,7 +109,7 @@ io.on('connection', (socket) => {
 
 // *Test route to verify server is running
 app.get('/', (req, res) => {
-    res.json({ message: 'Server is running!' });
+    res.json({message: 'Server is running!'});
 
 });
 
@@ -114,4 +117,4 @@ app.get('/', (req, res) => {
 // *Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
-module.exports = { server, io, onlineUsers };
+module.exports = {server, io, onlineUsers};
