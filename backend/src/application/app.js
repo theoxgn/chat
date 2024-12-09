@@ -37,22 +37,25 @@ app.use(fileRouter);
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    // Handle user online status
+    // !Handle user online status
     socket.on('user_online', (userId) => {
         onlineUsers.set(userId, true);
         io.emit('user_status_change', {userId, online: true});
     });
 
+    // !Handle user offline status
     socket.on('user_offline', (userId) => {
         onlineUsers.delete(userId);
         io.emit('user_status_change', {userId, online: false});
     });
 
+    // !Handle user connection
     socket.on('user_connected', (userId) => {
         socket.userId = userId;
         io.emit('user_connected');
     });
 
+    // !Handle user joining room
     socket.on('join_room', async (data) => {
         const {userId, roomId} = data;
         socket.join(roomId);
@@ -74,6 +77,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // !Handle user sending message
     socket.on('send_message', async (data) => {
         const {roomId, userId, content} = data;
         console.log(data, " aku di server")
@@ -91,6 +95,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // !Handle user leaving room (disconnect)
     socket.on('disconnect', () => {
         // Find and remove disconnected user
         for (const [userId, socketId] of onlineUsers.entries()) {
