@@ -1,6 +1,6 @@
 const pool = require("../config/postgres");
 const {io} = require("../application/app");
-const {Message, User} = require("../../models");
+const {Message, User, ChatRoom} = require("../../models");
 const {Op, fn, col} = require("sequelize");
 
 class MessageService {
@@ -24,6 +24,16 @@ class MessageService {
     }
 
     async createMessage(roomId, userId, content) {
+        // * Validate user and room
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        const room = await ChatRoom.findByPk(roomId);
+        if (!room) {
+            throw new Error('Room not found');
+        }
+
         // * Create message in database
         return await Message.create({
             chatRoomId: roomId,
@@ -60,7 +70,8 @@ class MessageService {
                 status: 'sent'
             },
             attributes: ['chatRoomId', [fn('COUNT', col('id')), 'count']],
-            group: ['chatRoomId']
+            group: ['chatRoomId'],
+            paranoid: false
         });
     }
 
@@ -107,7 +118,7 @@ class MessageService {
         }
 
         // * Create forwarded message
-        const result = await Message.create({
+        return await Message.create({
             chatRoomId: targetRoomId,
             senderId: userId,
             content: originalMessage.content,
@@ -116,11 +127,7 @@ class MessageService {
             isForwarded: true,
             originalMessageId: messageId
         });
-
-        return result;
     }
-
-
 }
 
 module.exports = new MessageService();
