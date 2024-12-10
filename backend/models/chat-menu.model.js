@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: DataTypes.NOW
         },
         updatedAt: {
-            field: 'updatedAt',
+            field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         }
@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: 'updated_at'
     });
 
-    ChatMenu.associate = function(models) {
+    ChatMenu.associate = function (models) {
         ChatMenu.hasMany(models.ChatSubMenu, {
             foreignKey: 'menu_id',
             as: 'subMenus'
