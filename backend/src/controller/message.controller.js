@@ -1,3 +1,5 @@
+const SuccessResponse = require("../response/success.response");
+
 // * Import Service
 const MessageService = require("../service/message.service");
 
@@ -6,7 +8,7 @@ class MessageController {
         try {
             const {roomId} = req.params;
             const result = await MessageService.getMessagesByRoomId(roomId);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'Messages retrieved successfully', result);
         } catch (error) {
             next(error);
         }
@@ -16,8 +18,7 @@ class MessageController {
         try {
             const {roomId, userId, content} = req.body;
             const result = await MessageService.createMessage(roomId, userId, content);
-            res.json(result);
-
+            return await SuccessResponse.toJSON(req, res, 201, 'Message sent successfully', result);
         } catch (error) {
             next(error);
         }
@@ -27,7 +28,7 @@ class MessageController {
         try {
             const {roomId, userId, messageIds} = req.body;
             const result = await MessageService.readMessage(roomId, userId, messageIds);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'Message read successfully', result);
         } catch (error) {
             next(error);
         }
@@ -37,7 +38,7 @@ class MessageController {
         try {
             const {userId} = req.params;
             const result = await MessageService.getUnreadMessagesCount(userId);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'Unread messages count retrieved successfully', result);
         } catch (error) {
             next(error);
         }

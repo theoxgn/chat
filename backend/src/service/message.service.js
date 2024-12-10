@@ -1,35 +1,36 @@
 const pool = require("../config/postgres");
 const {io} = require("../application/app");
+const {Message, User} = require("../../models");
+const {Op, fn, col} = require("sequelize");
 
 class MessageService {
     async getMessagesByRoomId(roomId) {
-        const result = await pool.query(
-            `SELECT m.*, u.username
-             FROM messages m
-                      JOIN users u ON m.user_id = u.id
-             WHERE room_id = $1
-             ORDER BY m.created_at ASC`,
-            [roomId]
-        );
-        return result.rows;
+        // * Find messages by room ID
+        return await Message.findAll({
+            where: {
+                chatRoomId: roomId
+            },
+            include: [{model: User, as: 'sender', attributes: ['id']}],
+            order: [['created_at', 'ASC']]
+        });
     }
 
     async createMessage(roomId, userId, content) {
-        // Here you would typically save to database
-        return {
-            id: Date.now(),
-            roomId,
-            userId,
-            content,
-            created_at: new Date()
-        };
+        // * Create message in database
+        return await Message.create({
+            chatRoomId: roomId,
+            senderId: userId,
+            content: content,
+            messageType: 'text',
+            status: 'sent'
+        });
     }
 
     async readMessage(roomId, userId, messageIds) {
-        // Update read status in database
-        await pool.query(
-            'UPDATE messages SET read = true, read_at = NOW() WHERE id = ANY($1) AND user_id != $2',
-            [messageIds, userId]
+        // * Update read status in database
+        const updated = await Message.update(
+            {status: "read", readAt: new Date()},
+            {where: {id: messageIds, senderId: {[Op.ne]: userId}}}
         );
 
         // Emit read receipt event
@@ -41,15 +42,18 @@ class MessageService {
                 readAt: new Date()
             });
         }
-        return {success: true};
+        return updated;
     }
 
     async getUnreadMessagesCount(userId) {
-        const result = await pool.query(
-            'SELECT room_id, COUNT(*) as count FROM messages WHERE user_id != $1 AND read = false GROUP BY room_id',
-            [userId]
-        );
-        return result.rows;
+        return await Message.findAll({
+            where: {
+                senderId: {[Op.ne]: userId},
+                status: 'sent'
+            },
+            attributes: ['chatRoomId', [fn('COUNT', col('id')), 'count']],
+            group: ['chatRoomId']
+        });
     }
 
     async searchMessageInRoom(roomId, searchQuery) {
