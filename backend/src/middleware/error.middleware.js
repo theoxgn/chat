@@ -9,25 +9,21 @@ const errorMiddleware = async (err, req, res, next) => {
     if (err instanceof ErrorResponse) {
         let message = err.message;
         res.status(err.statusCode).json({
-            Message: {
-                Code: err.statusCode,
-                Text: message
-            },
-            Data: {
-                Message: err.details
-            },
-            Type: req.originalUrl
+            statusCode: err.statusCode,
+            success: false,
+            message: message,
+            data: err.details,
+            timestamps: new Date().toISOString(),
+            path: req.originalUrl
         }).end();
     } else {
         res.status(500).json({
-            Message: {
-                Code: 500,
-                Text: "Internal Server Error"
-            },
-            Data: {
-                Message: err.message
-            },
-            Type: req.originalUrl
+            statusCode: 500,
+            success: false,
+            message: "Internal server error",
+            data: err.message,
+            timestamps: new Date().toISOString(),
+            path: req.originalUrl
         }).end();
 
     }

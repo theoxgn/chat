@@ -1,5 +1,6 @@
 const ChatService = require('../service/chat.service');
 const ErrorResponse = require("../response/error.response");
+const SuccessResponse = require("../response/success.response");
 
 class ChatController {
     async createChatTypingStatus(req, res, next) {
@@ -30,7 +31,7 @@ class ChatController {
         try {
             const {userId, roomId} = req.body;
             const result = await ChatService.createChatPin(userId, roomId);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 201, 'Chat pinned successfully', result);
         } catch (error) {
             next(error);
         }
@@ -40,7 +41,7 @@ class ChatController {
         try {
             const {userId, roomId} = req.body;
             const result = await ChatService.deleteChatPin(userId, roomId);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'Chat pin deleted successfully', result);
         } catch (error) {
             next(error);
         }
@@ -50,7 +51,7 @@ class ChatController {
         try {
             const {userId} = req.params;
             const result = await ChatService.getPinnedChats(userId);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'Pinned chats retrieved successfully', result);
         } catch (error) {
             next(error);
         }
