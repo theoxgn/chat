@@ -1,34 +1,39 @@
-const pool = require("../config/postgres");
 const onlineUsers = require("../store/onlineUsers.store");
+const {User} = require('../../models');
+const {Op} = require("sequelize");
 
 class UserService {
-    async checkUserExists(username) {
-        const result = await pool.query(
-            'SELECT id, username FROM users WHERE username = $1',
-            [username]
-        );
-        return result.rows[0];
+    async checkUserExists(username, muatUserId) {
+        // * Find user by username or muatUserId
+        return User.findOne({
+            where: {
+                [Op.or]: [
+                    {username: username},
+                    {muatUserId: muatUserId}
+                ]
+            }
+        });
     }
 
-    async createUser(username) {
-        // First check if user exists
-        const existingUser = await this.checkUserExists(username);
+    async createUser(username, muatUserId) {
+        // * First check if user exists
+        const existingUser = await this.checkUserExists(username, muatUserId);
         if (existingUser) {
             return existingUser; // Return existing user instead of creating new one
         }
 
-        // Create new user
-        const result = await pool.query(
-            'INSERT INTO users (username) VALUES ($1) RETURNING id, username',
-            [username]
-        );
-
-        return result.rows[0];
+        // * Create new user
+        return User.create({
+            username: username,
+            muatUserId: muatUserId
+        });
     }
 
     async getAllUsers() {
-        const result = await pool.query('SELECT id, username FROM users ORDER BY id');
-        return result.rows
+        // * Find all users
+        return User.findAll({
+            order: [['createdAt', 'ASC']]
+        });
     }
 
     async getOnlineUsers() {

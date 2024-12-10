@@ -1,16 +1,17 @@
 const ErrorResponse = require("../response/error.response");
+const SuccessResponse = require("../response/success.response");
 const UserService = require("../service/user.service");
 
 class UserController {
     async createUser(req, res, next) {
         try {
-            const {username} = req.body;
+            const {username, muatUserId} = req.body;
             if (!username) {
                 throw new ErrorResponse(400, "Bad Request", "Username is required");
             }
 
-            const result = await UserService.createUser(username);
-            res.json(result);
+            const result = await UserService.createUser(username, muatUserId);
+            return SuccessResponse.toJSON(req, res, 201, 'User created successfully', result);
         } catch (error) {
             next(error);
         }
@@ -19,7 +20,7 @@ class UserController {
     async getAllUsers(req, res, next) {
         try {
             const result = await UserService.getAllUsers();
-            res.json(result);
+            return SuccessResponse.toJSON(req, res, 200, 'Users retrieved successfully', result);
         } catch (error) {
             next(error);
         }
@@ -28,7 +29,7 @@ class UserController {
     async getOnlineUsers(req, res, next) {
         try {
             const result = await UserService.getOnlineUsers();
-            res.json(result);
+            return SuccessResponse.toJSON(req, res, 200, 'Online users retrieved successfully', result);
         } catch (error) {
             next(error);
         }
