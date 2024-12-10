@@ -31,6 +31,10 @@ module.exports = {
                     key: 'id'
                 }
             },
+            initiator_role: {
+                type: Sequelize.ENUM('seller, buyer', 'shipper', 'transporter'),
+                allowNull: false
+            },
             recipient: {
                 type: Sequelize.UUID,
                 allowNull: false,
@@ -38,6 +42,10 @@ module.exports = {
                     model: 'Users',
                     key: 'id'
                 }
+            },
+            recipient_role: {
+                type: Sequelize.ENUM('seller, buyer', 'shipper', 'transporter'),
+                allowNull: false
             },
             product_id: {
                 type: Sequelize.UUID

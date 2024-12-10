@@ -20,8 +20,18 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.UUID,
             allowNull: false
         },
+        initiatorRole: {
+            field: 'initiator_role',
+            type: DataTypes.STRING,
+            allowNull: false
+        },
         recipient: {
             type: DataTypes.UUID,
+            allowNull: false
+        },
+        recipientRole: {
+            field: 'recipient_role',
+            type: DataTypes.STRING,
             allowNull: false
         },
         lastActivity: {
