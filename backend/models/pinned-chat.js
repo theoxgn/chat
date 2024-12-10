@@ -21,11 +21,17 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
+        updatedAt: {
+            field: 'updated_at',
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW
+        }
     }, {
         tableName: 'PinnedChat',
         underscored: true,
         timestamps: true,
         createdAt: 'createdAt',
+        updatedAt: 'updatedAt'
     });
 
     PinnedChat.associate = function (models) {
