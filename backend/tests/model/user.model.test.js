@@ -5,7 +5,7 @@ beforeEach(async () => {
     await User.destroy({
         where: {
             email: {
-                [Op.like]: 'test%'
+                [Op.like]: 'testuser%'
             }
         }
     });
@@ -36,25 +36,22 @@ describe('User Model', () => {
             lastSeen: new Date()
         };
 
-        try {
-            const user = await User.create(userData);
-        } catch (e) {
-            console.log(e);
-        }
+        const user = await User.create(userData);
+        console.log(user);
 
-        // expect(user.id).toBeDefined();
-        // expect(user.username).toBe(userData.username);
-        // expect(user.companyName).toBe(userData.companyName);
-        // expect(user.email).toBe(userData.email);
-        // expect(user.password).toBe(userData.password);
-        // expect(user.profilePicture).toBe(userData.profilePicture);
-        // expect(user.role).toBe(userData.role);
-        // expect(user.status).toBe(userData.status);
-        // expect(user.nameChangesCount).toBe(userData.nameChangesCount);
-        // expect(user.lastNameChange).toBe(userData.lastNameChange);
-        // expect(user.isVerified).toBe(userData.isVerified);
-        // expect(user.referralCode).toBe(userData.referralCode);
-        // expect(user.lastSeen).toBe(userData.lastSeen);
-        // expect(user.createdAt).toBeDefined();
+        expect(user.id).toBeDefined();
+        expect(user.username).toBe(userData.username);
+        expect(user.companyName).toBe(userData.companyName);
+        expect(user.email).toBe(userData.email);
+        expect(user.password).toBe(userData.password);
+        expect(user.profilePicture).toBe(userData.profilePicture);
+        expect(user.role).toBe(userData.role);
+        expect(user.status).toBe(userData.status);
+        expect(user.nameChangesCount).toBe(userData.nameChangesCount);
+        expect(user.lastNameChange).toStrictEqual(userData.lastNameChange);
+        expect(user.isVerified).toBe(userData.isVerified);
+        expect(user.referralCode).toBe(userData.referralCode);
+        expect(user.lastSeen).toStrictEqual(userData.lastSeen);
+        expect(user.createdAt).toBeDefined();
     });
 });
