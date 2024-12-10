@@ -5,6 +5,7 @@ module.exports = {
         await queryInterface.bulkInsert('Users', [
             {
                 id: "550e8400-e29b-41d4-a716-446655442222",
+                muat_user_id: "1",
                 username: 'buyer',
                 company_name: 'Buyer Sentosa',
                 email: 'buyeruser@example.com',
@@ -22,6 +23,7 @@ module.exports = {
             },
             {
                 id: "550e8400-e29b-41d4-a716-446655441111",
+                muat_user_id: "2",
                 username: 'seller',
                 company_name: 'Seller Abadi',
                 email: 'selleruser@example.com',

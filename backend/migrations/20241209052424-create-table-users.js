@@ -8,6 +8,10 @@ module.exports = {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4
             },
+            muat_user_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+            },
             username: {
                 type: Sequelize.STRING,
                 allowNull: false

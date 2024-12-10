@@ -25,6 +25,7 @@ describe('User Model', () => {
         const userData = {
             username: 'testuser',
             companyName: 'testcompany',
+            muatUserId: '999',
             email: 'testuser@example.com',
             password: 'password123',
             profilePicture: "https://example.com",

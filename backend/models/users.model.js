@@ -6,6 +6,11 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: DataTypes.UUIDV4,
             primaryKey: true
         },
+        muatUserId: {
+            field: 'muat_user_id',
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
         username: {
             type: DataTypes.STRING,
             allowNull: false
