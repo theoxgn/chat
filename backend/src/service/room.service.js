@@ -1,37 +1,62 @@
 const pool = require("../config/postgres");
 
+// * Import model
+const {ChatRoom, ChatMenu, ChatSubMenu} = require('../../models');
+const {Op} = require("sequelize");
+
 class RoomService {
-    async createOrFindRoom(user1Id, user2Id) {
-        // First check if a room already exists for these users
-        const existingRoomQuery = `
-            SELECT r.id, r.created_at
-            FROM chat_rooms r
-                     JOIN chat_participants p1 ON r.id = p1.room_id
-                     JOIN chat_participants p2 ON r.id = p2.room_id
-            WHERE p1.user_id = $1
-              AND p2.user_id = $2
-        `;
-
-        const existingRoom = await pool.query(existingRoomQuery, [user1Id, user2Id]);
-
-        if (existingRoom.rows.length > 0) {
-            return existingRoom.rows[0];
+    async createOrFindRoom(initiatorId, recipientId, initiatorRole, recipientRole, menuName, subMenuName) {
+        // * check menu and sub menu are exists
+        const subMenu = await ChatSubMenu.findOne({
+            where: {
+                name: subMenuName,
+            },
+            include: {
+                model: ChatMenu,
+                as: 'menu',
+                where: {
+                    name: menuName
+                }
+            }
+        });
+        if (!subMenu) {
+            throw new Error('Sub menu not found');
         }
 
-        // If no room exists, create a new one
-        const result = await pool.query(
-            'INSERT INTO chat_rooms DEFAULT VALUES RETURNING *'
-        );
+        // * check if a room already exists for these users
+        console.log(initiatorId, recipientId, initiatorRole, recipientRole, menuName, subMenuName);
+        const existingRoom = await ChatRoom.findOne({
+            where: {
+                [Op.and]: [
+                    {menuId: subMenu.menuId},
+                    {subMenuId: subMenu.id},
+                    {initiator: initiatorId},
+                    {recipient: recipientId},
+                    {initiatorRole},
+                    {recipientRole}
+                ]
+            }
+        });
+        if (existingRoom) {
+            return {
+                id: existingRoom.id,
+                created_at: existingRoom.created_at
+            }
+        }
 
-        const roomId = result.rows[0].id;
-
-        // Add both users to the room
-        await pool.query(
-            'INSERT INTO chat_participants (user_id, room_id) VALUES ($1, $2), ($3, $2)',
-            [user1Id, roomId, user2Id]
-        );
-
-        return result.rows[0]
+        // * If no room exists, create a new one
+        const result = await ChatRoom.create({
+            menuId: subMenu.menuId,
+            subMenuId: subMenu.id,
+            initiator: initiatorId,
+            initiatorRole,
+            recipient: recipientId,
+            recipientRole
+        });
+        return {
+            id: result.id,
+            created_at: result.created_at
+        }
     }
 }
 
