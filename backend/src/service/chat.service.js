@@ -1,4 +1,3 @@
-const pool = require("../config/postgres");
 const typingUsers = require("../store/typingUsers.store")
 const {PinnedChat, User, ChatRoom} = require("../../models");
 
