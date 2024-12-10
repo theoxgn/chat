@@ -99,14 +99,12 @@ class ChatService {
     }
 
     async getPinnedChats(userId) {
-        const result = await PinnedChat.findAll({
+        return await PinnedChat.findAll({
             where: {
                 userId: userId
             },
             order: [['createdAt', 'DESC']]
         });
-
-        return result;
     }
 }
 
