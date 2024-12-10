@@ -9,8 +9,6 @@ class MenuService {
         }
 
         // * Find all menus by user
-        const {Op} = require('sequelize');
-
         return await ChatMenu.findAll({
             attributes: ['id', 'name'],
             include: [
