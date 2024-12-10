@@ -3,6 +3,7 @@ const ErrorResponse = require("../response/error.response");
 const SuccessResponse = require("../response/success.response");
 
 class ChatController {
+    // TODO: Implement socketio
     async createChatTypingStatus(req, res, next) {
         try {
             console.log('Received typing update:', req.body); // Debug log
@@ -17,6 +18,7 @@ class ChatController {
         }
     }
 
+    // TODO: Implement socketio
     async getChatTypingStatus(req, res, next) {
         try {
             const roomKey = `room:${req.params.roomId}`;
