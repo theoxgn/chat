@@ -4,8 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "test": "jest --runInBand",
+    "dev": "nodemon server.js",
+    "migrate": "sequelize db:migrate",
+    "migrateUndo": "sequelize db:migrate:undo:all",
+    "seed": "sequelize db:seed:all",
+    "seedUndo" : "sequelize db:seed:undo:all"
   },
   "keywords": [],
   "author": "",
