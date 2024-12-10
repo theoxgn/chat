@@ -6,12 +6,20 @@ const {Op, fn, col} = require("sequelize");
 class MessageService {
     async getMessagesByRoomId(roomId) {
         // * Find messages by room ID
-        return await Message.findAll({
+        const messages = await Message.findAll({
             where: {
                 chatRoomId: roomId
             },
             include: [{model: User, as: 'sender', attributes: ['id']}],
-            order: [['created_at', 'ASC']]
+            order: [['created_at', 'ASC']],
+            paranoid: false
+        });
+
+        return messages.map(message => {
+            if (message.deleted_at) {
+                message.content = 'This message was deleted';
+            }
+            return message;
         });
     }
 
@@ -84,14 +92,11 @@ class MessageService {
     }
 
     async deleteMessage(messageId) {
-
-        // Optional: Add additional checks here (e.g., message ownership)
-        await pool.query(
-            'DELETE FROM messages WHERE id = $1',
-            [messageId]
-        );
-
-        return {success: true};
+        return await Message.destroy({
+            where: {
+                id: messageId
+            }
+        });
     }
 
     async forwardMessage(messageId, targetRoomId, userId) {

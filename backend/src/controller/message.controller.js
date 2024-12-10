@@ -67,7 +67,7 @@ class MessageController {
         try {
             const {messageId} = req.params;
             const result = await MessageService.deleteMessage(messageId);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'Message deleted successfully', result);
         } catch (error) {
             next(error);
         }
