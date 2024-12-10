@@ -100,16 +100,24 @@ class MessageService {
     }
 
     async forwardMessage(messageId, targetRoomId, userId) {
-        const result = await pool.query(
-            `INSERT INTO messages (room_id, user_id, content, forwarded_from)
-             SELECT $1, $2, content, id
-             FROM messages
-             WHERE id = $3
-             RETURNING *`,
-            [targetRoomId, userId, messageId]
-        );
+        // * Find original message
+        const originalMessage = await Message.findByPk(messageId);
+        if (!originalMessage) {
+            throw new Error('Original message not found');
+        }
 
-        return result.rows[0];
+        // * Create forwarded message
+        const result = await Message.create({
+            chatRoomId: targetRoomId,
+            senderId: userId,
+            content: originalMessage.content,
+            messageType: 'text',
+            status: 'sent',
+            isForwarded: true,
+            originalMessageId: messageId
+        });
+
+        return result;
     }
 
 

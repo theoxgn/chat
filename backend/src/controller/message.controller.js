@@ -77,7 +77,7 @@ class MessageController {
         try {
             const {messageId, targetRoomId, userId} = req.body;
             const result = await MessageService.forwardMessage(messageId, targetRoomId, userId);
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'Message forwarded successfully', result);
         } catch (error) {
             next(error);
         }
