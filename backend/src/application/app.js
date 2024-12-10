@@ -25,6 +25,7 @@ const chatRouter = require('../route/chat.route');
 const roomRouter = require('../route/room.route');
 const adminRouter = require('../route/admin.route');
 const fileRouter = require('../route/file.route');
+const menuRouter = require('../route/menu.route');
 
 app.use(cors());
 app.use(express.json());
@@ -34,6 +35,7 @@ app.use(chatRouter);
 app.use(roomRouter);
 app.use(adminRouter);
 app.use(fileRouter);
+app.use(menuRouter);
 
 // *Socket.IO connection handling
 io.on('connection', (socket) => {

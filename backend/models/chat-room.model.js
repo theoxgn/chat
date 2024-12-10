@@ -74,6 +74,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'recipient',
             as: 'recipientUser'
         });
+        ChatRoom.hasMany(models.Message, {
+            foreignKey: 'chat_room_id',
+            as: 'messages'
+        });
     };
 
     return ChatRoom;
