@@ -79,9 +79,9 @@ module.exports = (sequelize, DataTypes) => {
 
     // models/user.model.js
     User.associate = function (models) {
-        User.hasMany(models.ChatPreferences, {
+        User.hasMany(models.PinnedChat, {
             foreignKey: 'user_id',
-            as: 'chatPreferences'
+            as: 'pinnedChats'
         });
     };
 

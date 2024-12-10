@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
     up: async (queryInterface, Sequelize) => {
-        await queryInterface.createTable('ChatPreferences', {
+        await queryInterface.createTable('PinnedChat', {
             id: {
                 allowNull: false,
                 primaryKey: true,
@@ -16,31 +16,22 @@ module.exports = {
                     key: 'id'
                 }
             },
-            is_pinned: {
-                type: Sequelize.BOOLEAN
-            },
-            is_favorite: {
-                type: Sequelize.BOOLEAN
-            },
-            pinned_at: {
-                type: Sequelize.DATE
-            },
-            favorited_at: {
-                type: Sequelize.DATE
+            chat_room_id: {
+                type: Sequelize.UUID,
+                allowNull: false,
+                references: {
+                    model: 'ChatRooms',
+                    key: 'id'
+                }
             },
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.NOW
             },
-            updated_at: {
-                allowNull: false,
-                type: Sequelize.DATE,
-                defaultValue: Sequelize.NOW
-            }
         });
     },
     down: async (queryInterface, Sequelize) => {
-        await queryInterface.dropTable('ChatPreferences');
+        await queryInterface.dropTable('PinnedChat');
     }
 };
