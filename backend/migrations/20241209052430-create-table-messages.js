@@ -31,10 +31,10 @@ module.exports = {
                 type: Sequelize.STRING
             },
             message_type: {
-                type: Sequelize.ENUM('text', 'image', 'document', 'link', 'module')
+                type: Sequelize.ENUM(['text', 'image', 'document', 'link', 'module'])
             },
             status: {
-                type: Sequelize.ENUM('sent', 'delivered', 'read', 'unsent')
+                type: Sequelize.ENUM(['delivered', 'read', 'unsent'])
             },
             original_message_id: {
                 type: Sequelize.UUID

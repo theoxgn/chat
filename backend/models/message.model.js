@@ -23,10 +23,10 @@ module.exports = (sequelize, DataTypes) => {
         },
         messageType: {
             field: 'message_type',
-            type: DataTypes.ENUM('text', 'image', 'document', 'link', 'module')
+            type: DataTypes.ENUM(['text', 'image', 'document', 'link', 'module'])
         },
         status: {
-            type: DataTypes.ENUM('sent', 'delivered', 'read', 'unsent')
+            type: DataTypes.ENUM(['delivered', 'read', 'unsent'])
         },
         originalMessageId: {
             type: DataTypes.UUID,
