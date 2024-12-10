@@ -1,5 +1,3 @@
-const pool = require("../config/postgres");
-
 // * Import model
 const {ChatRoom, ChatMenu, ChatSubMenu} = require('../../models');
 const {Op} = require("sequelize");
