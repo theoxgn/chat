@@ -24,7 +24,7 @@ module.exports = {
                     key: 'id'
                 }
             },
-            message: {
+            content: {
                 type: Sequelize.TEXT
             },
             media_url: {
