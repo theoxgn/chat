@@ -1,7 +1,9 @@
 const pool = require("../config/postgres");
 const typingUsers = require("../store/typingUsers.store")
+const {PinnedChat, User, ChatRoom} = require("../../models");
 
 class ChatService {
+    // !! Need To Change with Socketio
     async createChatTypingStatus(roomId, userId, typing) {
         const roomKey = `room:${roomId}`;
         let roomTyping = typingUsers.get(roomKey) || new Set();
@@ -34,6 +36,7 @@ class ChatService {
 
     }
 
+    // !! Need To Change with Socketio
     async getChatTypingStatus(roomKey) {
         const roomTyping = typingUsers.get(roomKey) || new Set();
         return {
@@ -42,34 +45,68 @@ class ChatService {
     }
 
     async createChatPin(userId, roomId) {
-        await pool.query(
-            'INSERT INTO pinned_chats (user_id, room_id) VALUES ($1, $2) ON CONFLICT (user_id, room_id) DO NOTHING',
-            [userId, roomId]
-        );
-        return {success: true};
+        // * Validate userId exists
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return {success: false, message: 'User not found'};
+        }
+
+        // * Validate roomId exists
+        const chatRoom = await ChatRoom.findByPk(roomId);
+        if (!chatRoom) {
+            return {success: false, message: 'Chat room not found'};
+        }
+
+        // * If not exists, create a new pinned chat
+        // * If exists, return success
+        const pinnedChat = await PinnedChat.findOne({where: {userId: userId, chatRoomId: roomId}});
+        if (pinnedChat) {
+            return {success: true, result: pinnedChat};
+        }
+        const result = await PinnedChat.create({
+            userId: userId,
+            chatRoomId: roomId,
+        });
+        if (result) {
+            return {success: true, result: result};
+        } else {
+            return {success: false, result: result};
+        }
     }
 
     async deleteChatPin(userId, roomId) {
-        await pool.query(
-            'DELETE FROM pinned_chats WHERE user_id = $1 AND room_id = $2',
-            [userId, roomId]
-        );
-        return {success: true};
+        // * Validate userId exists
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return {success: false, message: 'User not found'};
+        }
+
+        // * Validate roomId exists
+        const chatRoom = await ChatRoom.findByPk(roomId);
+        if (!chatRoom) {
+            return {success: false, message: 'Chat room not found'};
+        }
+
+        // * If exists, delete the pinned chat
+        // * If not exists, return success
+        const pinnedChat = await PinnedChat.findOne({where: {userId: userId, chatRoomId: roomId}});
+        if (pinnedChat) {
+            await pinnedChat.destroy();
+            return {success: true};
+        } else {
+            return {success: true};
+        }
     }
 
     async getPinnedChats(userId) {
-        const result = await pool.query(
-            `SELECT pc.*, cr.*, u.username as other_user_name
-             FROM pinned_chats pc
-                      JOIN chat_rooms cr ON pc.room_id = cr.id
-                      JOIN chat_participants cp ON cr.id = cp.room_id
-                      JOIN users u ON cp.user_id = u.id
-             WHERE pc.user_id = $1
-               AND cp.user_id != $1
-             ORDER BY pc.pinned_at DESC`,
-            [userId]
-        );
-        return result.rows;
+        const result = await PinnedChat.findAll({
+            where: {
+                userId: userId
+            },
+            order: [['createdAt', 'DESC']]
+        });
+
+        return result;
     }
 }
 

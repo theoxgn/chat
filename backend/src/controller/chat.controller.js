@@ -39,8 +39,8 @@ class ChatController {
     async deleteChatPin(req, res, next) {
         try {
             const {userId, roomId} = req.body;
-            await ChatService.deleteChatPin(userId, roomId);
-            res.json({success: true});
+            const result = await ChatService.deleteChatPin(userId, roomId);
+            res.json(result);
         } catch (error) {
             next(error);
         }
