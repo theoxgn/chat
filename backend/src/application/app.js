@@ -13,6 +13,8 @@ const io = new Server(server, {
     }
 });
 
+const {errorMiddleware} = require('../middleware/error.middleware');
+
 // * Import from service
 const onlineUsers = require('../store/onlineUsers.store')
 
@@ -121,5 +123,8 @@ app.get('/', (req, res) => {
 
 // *Serve uploaded files
 app.use('/uploads', express.static('uploads'));
+
+// * Error Middleware
+app.use(errorMiddleware)
 
 module.exports = {server, io, onlineUsers};
