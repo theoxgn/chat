@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: DataTypes.NOW
         }
     }, {
-        tableName: 'ChatPreferencess',
+        tableName: 'ChatPreferences',
         underscored: true,
         timestamps: true,
         createdAt: 'createdAt',

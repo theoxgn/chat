@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
         email: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true
+            unique: false
         },
         password: {
             type: DataTypes.STRING,
@@ -80,7 +80,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // models/user.model.js
     User.associate = function (models) {
-        User.hasMany(models.ChatRoomParticipant, {
+        User.hasMany(models.ChatPreferences, {
             foreignKey: 'user_id',
             as: 'chatRoomParticipants'
         });
