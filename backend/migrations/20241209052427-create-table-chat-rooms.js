@@ -32,7 +32,7 @@ module.exports = {
                 }
             },
             initiator_role: {
-                type: Sequelize.ENUM('seller, buyer', 'shipper', 'transporter'),
+                type: Sequelize.STRING,
                 allowNull: false
             },
             recipient: {
@@ -44,7 +44,7 @@ module.exports = {
                 }
             },
             recipient_role: {
-                type: Sequelize.ENUM('seller, buyer', 'shipper', 'transporter'),
+                type: Sequelize.STRING,
                 allowNull: false
             },
             product_id: {
