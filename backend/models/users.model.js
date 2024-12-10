@@ -12,16 +12,16 @@ module.exports = (sequelize, DataTypes) => {
         },
         email: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
         password: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
         companyName: {
             field: 'company_name',
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
         profilePicture: {
             field: 'profile_picture',

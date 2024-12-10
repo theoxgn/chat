@@ -14,16 +14,16 @@ module.exports = {
             },
             email: {
                 type: Sequelize.STRING,
-                allowNull: false,
+                allowNull: true,
                 unique: false
             },
             password: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: true
             },
             company_name: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: true
             },
             profile_picture: {
                 type: Sequelize.STRING
