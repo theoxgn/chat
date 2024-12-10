@@ -5,9 +5,10 @@ beforeEach(async () => {
     await User.destroy({
         where: {
             email: {
-                [Op.like]: 'testuser%'
+                [Op.like]: 'test%'
             }
-        }
+        },
+        force: true
     });
 });
 
