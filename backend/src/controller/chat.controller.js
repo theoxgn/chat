@@ -66,11 +66,19 @@ class ChatController {
                 viewAs,
                 subMenuId,
                 isAll,
+                groupBy,
                 page,
                 size,
             } = req.query;
-            const result = await ChatService.getAllChats(userId, viewAs, subMenuId, isAll, page, size);
-            return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
+            if (groupBy === "category") {
+                const result = await ChatService.getAllChatsViewCategory(userId, viewAs, subMenuId, isAll, page, size);
+                return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
+            } else if (groupBy === "user") {
+                const result = await ChatService.getAllChatsViewUser(userId, viewAs, subMenuId, isAll, page, size);
+                return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
+            } else {
+                throw new ErrorResponse(400, 'Bad Request', 'Invalid groupBy parameter');
+            }
         } catch (error) {
             next(error);
         }
