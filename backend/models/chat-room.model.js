@@ -78,6 +78,11 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'chat_room_id',
             as: 'messages'
         });
+        // Di chat-room.model.js, tambahkan ini di dalam ChatRoom.associate
+        ChatRoom.hasMany(models.PinnedChat, {
+            foreignKey: 'chat_room_id',
+            as: 'pinnedChats'
+        });
     };
 
     return ChatRoom;
