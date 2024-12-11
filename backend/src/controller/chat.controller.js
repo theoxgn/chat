@@ -58,6 +58,22 @@ class ChatController {
             next(error);
         }
     }
+
+    async getAllChats(req, res, next) {
+        try {
+            const {
+                userId,
+                viewAs,
+                searchQuery,
+                page,
+                size,
+            } = req.query;
+            const result = await ChatService.getAllChats(userId, viewAs, searchQuery, page, size);
+            return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new ChatController();

@@ -1,5 +1,7 @@
 const typingUsers = require("../store/typingUsers.store")
-const {PinnedChat, User, ChatRoom} = require("../../models");
+const {PinnedChat, User, ChatRoom, Message} = require("../../models");
+const {Op, Sequelize} = require("sequelize");
+const ChatRole = require("../enums/chat.role");
 
 class ChatService {
     // !! Need To Change with Socketio
@@ -104,6 +106,82 @@ class ChatService {
             },
             order: [['createdAt', 'DESC']]
         });
+    }
+
+    async getAllChats(userId, viewAs, searchQuery, page, size) {
+        // * Define pagination
+        const offset = page * size;
+        const limit = size;
+        let oppositeRole = null;
+
+        // * Determine oposite role
+        switch (viewAs) {
+            // ? If view as buyer, show the sellers
+            case ChatRole.BUYER:
+                oppositeRole = ChatRole.SELLER;
+                break;
+            // ? If view as seller, show the buyers
+            case ChatRole.SELLER:
+                oppositeRole = ChatRole.BUYER;
+                break;
+            // ? If view as shipper, show the transporters
+            case ChatRole.SHIPPER:
+                oppositeRole = ChatRole.TRANSPORTER;
+                break;
+            // ? If view as transporter, show the shippers
+            case ChatRole.TRANSPORTER:
+                oppositeRole = ChatRole.SHIPPER;
+                break;
+
+        }
+
+        // * Find chat (represent chatroom) by userId
+        // * Viewer is role of user in chatroom
+        // * Opposite is role of other user in chatroom
+        const chats = await ChatRoom.findAll({
+            include: [
+                {
+                    model: Message,
+                    as: 'messages',
+                    limit: 1,
+                    attributes: ['content', 'createdAt'],
+                    order: [['createdAt', 'DESC']],
+                }
+            ],
+            where: {
+                [Op.and]: [
+                    // User must be either recipient or initiator
+                    {
+                        [Op.or]: [
+                            {recipient: userId},
+                            {initiator: userId}
+                        ]
+                    },
+                    // The other person must have the opposite role
+                    {
+                        [Op.or]: [
+                            // If user is recipient, check initiatorRole
+                            {
+                                [Op.and]: [
+                                    {recipient: userId},
+                                    {initiatorRole: oppositeRole}
+                                ]
+                            },
+                            // If user is initiator, check recipientRole
+                            {
+                                [Op.and]: [
+                                    {initiator: userId},
+                                    {recipientRole: oppositeRole}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            subQuery: false,
+            order: [[Sequelize.literal('(SELECT MAX("created_at") FROM "Messages" WHERE "Messages"."chat_room_id" = "ChatRoom"."id")'), 'DESC NULLS LAST']]
+        });
+        return chats
     }
 }
 
