@@ -1,13 +1,14 @@
 const {User} = require('../../models');
 const sequelize = require("sequelize");
 const db = require("../../models");
+const ErrorResponse = require("../response/error.response");
 
 class MenuService {
     async getAllMenusByUser(userId) {
         // * Find user by userId
         const user = await User.findByPk(userId);
         if (!user) {
-            return {success: false, message: 'User not found'};
+            throw new ErrorResponse(404, 'User not found');
         }
 
         const query = `
