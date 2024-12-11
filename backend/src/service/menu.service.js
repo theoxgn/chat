@@ -1,4 +1,6 @@
-const {ChatMenu, ChatSubMenu, User, ChatRoom, Message} = require('../../models');
+const {User} = require('../../models');
+const sequelize = require("sequelize");
+const db = require("../../models");
 
 class MenuService {
     async getAllMenusByUser(userId) {
@@ -8,36 +10,32 @@ class MenuService {
             return {success: false, message: 'User not found'};
         }
 
+        const query = `
+            SELECT cm.id        as menu_id,
+                   cm.name      as menu_name,
+                   csm.id       as sub_menu_id,
+                   csm.name     as sub_menu_name,
+                   COALESCE(COUNT(CASE
+                                      WHEN m.id IS NOT NULL
+                                          AND m.sender_id != :userId
+                                          AND (m.status = 'delivered' OR m.status = 'sent')
+                                          THEN 1
+                       END), 0) AS unread_message_count
+            FROM "ChatMenus" cm
+                     INNER JOIN "ChatSubMenus" csm ON csm.menu_id = cm.id
+                     INNER JOIN "ChatRooms" cr ON cr.sub_menu_id = csm.id
+                     LEFT JOIN "Messages" m ON m.chat_room_id = cr.id
+            GROUP BY cm.id, cm.name, csm.id, csm.name
+            ORDER BY cm.id, csm.id
+        `;
+
         // * Find all menus by user
-        return await ChatMenu.findAll({
-            attributes: ['id', 'name'],
-            include: [
-                {
-                    attributes: ['id', 'name'],
-                    model: ChatSubMenu,
-                    as: 'subMenus',
-                    required: true,
-                    include: [
-                        {
-                            model: ChatRoom,
-                            as: 'chatRooms',
-                            required: true,
-                            attributes: [],
-                            include: [
-                                {
-                                    model: Message,
-                                    as: 'messages',
-                                    required: true,
-                                    attributes: [],
-                                    where: {
-                                        senderId: userId
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
+        return await db.sequelize.query(query, {
+            replacements: {
+                userId: userId
+            },
+            type: sequelize.QueryTypes.SELECT,
+            raw: true
         });
     }
 }
