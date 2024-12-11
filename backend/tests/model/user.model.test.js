@@ -1,5 +1,6 @@
 const {sequelize, User} = require('../../models');
 const {Op} = require('sequelize');
+const ChatRole = require("../../src/enums/chat.role");
 
 beforeEach(async () => {
     await User.destroy({
@@ -29,7 +30,7 @@ describe('User Model', () => {
             email: 'testuser@example.com',
             password: 'password123',
             profilePicture: "https://example.com",
-            role: "buyer",
+            role: ChatRole.BUYER,
             status: "active",
             nameChangesCount: 0,
             lastNameChange: new Date(),
