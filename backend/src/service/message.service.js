@@ -3,6 +3,7 @@ const {io} = require("../application/app");
 const {Message, User, ChatRoom} = require("../../models");
 const {Op, fn, col} = require("sequelize");
 const MessageStatus = require("../enums/message.status");
+const MessageType = require("../enums/message.type");
 
 class MessageService {
     async getMessagesByRoomId(roomId) {
@@ -40,7 +41,7 @@ class MessageService {
             chatRoomId: roomId,
             senderId: userId,
             content: content,
-            messageType: 'text',
+            messageType: MessageType.TEXT,
             status: MessageStatus.DELIVERED
         });
     }
