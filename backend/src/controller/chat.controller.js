@@ -64,11 +64,12 @@ class ChatController {
             const {
                 userId,
                 viewAs,
-                searchQuery,
+                subMenuId,
+                isAll,
                 page,
                 size,
             } = req.query;
-            const result = await ChatService.getAllChats(userId, viewAs, searchQuery, page, size);
+            const result = await ChatService.getAllChats(userId, viewAs, subMenuId, isAll, page, size);
             return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
         } catch (error) {
             next(error);
