@@ -34,7 +34,7 @@ module.exports = {
                 type: Sequelize.ENUM(['text', 'image', 'document', 'link', 'module'])
             },
             status: {
-                type: Sequelize.ENUM(['delivered', 'read', 'unsent'])
+                type: Sequelize.ENUM(['delivered', 'read'])
             },
             original_message_id: {
                 type: Sequelize.UUID
@@ -52,9 +52,6 @@ module.exports = {
                 type: Sequelize.BOOLEAN
             },
             read_at: {
-                type: Sequelize.DATE
-            },
-            unsent_at: {
                 type: Sequelize.DATE
             },
             created_at: {

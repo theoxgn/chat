@@ -2,6 +2,7 @@ const pool = require("../config/postgres");
 const {io} = require("../application/app");
 const {Message, User, ChatRoom} = require("../../models");
 const {Op, fn, col} = require("sequelize");
+const MessageStatus = require("../enums/message.status");
 
 class MessageService {
     async getMessagesByRoomId(roomId) {
@@ -40,14 +41,14 @@ class MessageService {
             senderId: userId,
             content: content,
             messageType: 'text',
-            status: 'sent'
+            status: MessageStatus.DELIVERED
         });
     }
 
     async readMessage(roomId, userId, messageIds) {
         // * Update read status in database
         const updated = await Message.update(
-            {status: "read", readAt: new Date()},
+            {status: MessageStatus.READ, readAt: new Date()},
             {where: {id: messageIds, senderId: {[Op.ne]: userId}}}
         );
 
