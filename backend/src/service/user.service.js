@@ -29,9 +29,19 @@ class UserService {
         });
     }
 
-    async getAllUsers() {
+    async getAllUsers(name) {
         // * Find all users
+        const whereClause = name ? {
+            where: {
+                [Op.or]: [
+                    {username: {[Op.iLike]: `%${name}%`}},
+                    {companyName: {[Op.iLike]: `%${name}%`}}
+                ]
+            }
+        } : {};
+
         return User.findAll({
+            ...whereClause,
             order: [['createdAt', 'ASC']]
         });
     }

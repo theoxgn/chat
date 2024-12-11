@@ -19,7 +19,10 @@ class UserController {
 
     async getAllUsers(req, res, next) {
         try {
-            const result = await UserService.getAllUsers();
+            const {
+                name
+            } = req.query;
+            const result = await UserService.getAllUsers(name);
             return SuccessResponse.toJSON(req, res, 200, 'Users retrieved successfully', result);
         } catch (error) {
             next(error);
