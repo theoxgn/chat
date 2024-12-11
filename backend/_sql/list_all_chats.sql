@@ -13,7 +13,13 @@ select
     M.status as last_message_status,
     PC.created_at as pinned_at,
     CM.name as menu_name,
-    CSM.name as sub_menu_name
+    CSM.name as sub_menu_name,
+    (
+        SELECT COUNT(*)
+        FROM public."Messages" unread
+        WHERE unread.chat_room_id = cr.id
+          AND unread.status = 'delivered'
+    ) as unread_count
 
 from "ChatRooms" cr
          left join public."Users" initiator on cr.initiator = initiator.id
@@ -39,6 +45,7 @@ where
          ))
   and cr.sub_menu_id = 'f482b827-3a76-4052-9545-e124bb48fdf8'
   and M.created_at is not null
+--     and M.status = 'delivered'
 order by
     PC.created_at desc nulls last,
     M.created_at desc nulls last
