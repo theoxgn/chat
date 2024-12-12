@@ -1,5 +1,9 @@
 ENUM -> OP
 Swagger
-View As
-Filter
-Show Chatlist sebagai Kategori atau User
+View As -> OK
+View Group -> OK
+Filter -> OK
+Show Chatlist sebagai Kategori atau User -> OK  (View Group)
+
+
+12/12/2024
