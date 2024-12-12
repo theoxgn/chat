@@ -7,7 +7,8 @@ class MenuController {
     async getAllMenusByUser(req, res, next) {
         try {
             const {userId} = req.params;
-            const result = await MenuService.getAllMenusByUser(userId);
+            const {viewAs} = req.query;
+            const result = await MenuService.getAllMenusByUser(userId, viewAs);
             return await SuccessResponse.toJSON(req, res, 200, 'Menus retrieved successfully', result);
 
         } catch (error) {
