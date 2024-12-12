@@ -1,4 +1,4 @@
-const {User} = require('../../models');
+const {User, FavoriteSubMenu, ChatSubMenu} = require('../../models');
 const sequelize = require("sequelize");
 const db = require("../../models");
 const ErrorResponse = require("../response/error.response");
@@ -85,6 +85,46 @@ class MenuService {
             type: sequelize.QueryTypes.SELECT,
             raw: true
         });
+    }
+
+    async favoriteSubMenu(subMenuId, userId) {
+        // * Validate user
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new ErrorResponse(404, 'User not found');
+        }
+
+        // * Validate sub menu
+        const subMenu = await ChatSubMenu.findByPk(subMenuId);
+        if (!subMenu) {
+            throw new ErrorResponse(404, 'Sub menu not found');
+        }
+
+
+        // * Find favorite sub menu
+        const favoriteSubMenu = await FavoriteSubMenu.findOne({
+            where: {
+                userId: userId,
+                subMenuId: subMenuId
+            }
+        });
+
+        // * If favorite sub menu exists, delete it
+        if (favoriteSubMenu) {
+            const result = await favoriteSubMenu.destroy();
+            if (result) {
+                return `Unmark sub menu ${subMenuId} as favorite successfully`;
+            }
+        } else {
+            // * If favorite sub menu does not exist, create it
+            const result = await FavoriteSubMenu.create({
+                userId: userId,
+                subMenuId: subMenuId
+            });
+            if (result) {
+                return `Mark sub menu ${subMenuId} as favorite successfully`;
+            }
+        }
     }
 }
 
