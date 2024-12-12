@@ -8,7 +8,6 @@ class MenuService {
     async getAllMenusByUser(userId, viewAs) {
         let oppositeRole = null;
 
-
         // * Find user by userId
         const user = await User.findByPk(userId);
         if (!user) {
@@ -87,7 +86,7 @@ class MenuService {
         });
     }
 
-    async favoriteSubMenu(subMenuId, userId) {
+    async favoriteSubMenu(subMenuId, userId, viewAs) {
         // * Validate user
         const user = await User.findByPk(userId);
         if (!user) {
@@ -105,7 +104,8 @@ class MenuService {
         const favoriteSubMenu = await FavoriteSubMenu.findOne({
             where: {
                 userId: userId,
-                subMenuId: subMenuId
+                subMenuId: subMenuId,
+                viewAs: viewAs
             }
         });
 
@@ -119,12 +119,78 @@ class MenuService {
             // * If favorite sub menu does not exist, create it
             const result = await FavoriteSubMenu.create({
                 userId: userId,
-                subMenuId: subMenuId
+                subMenuId: subMenuId,
+                viewAs: viewAs
             });
             if (result) {
                 return `Mark sub menu ${subMenuId} as favorite successfully`;
             }
         }
+    }
+
+    async getAllMenusFavoriteByUser(userId, viewAs) {
+        let oppositeRole = null;
+
+        // * Find user by userId
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new ErrorResponse(404, 'User not found');
+        }
+
+        // * Determine oposite role
+        switch (viewAs) {
+            // ? If view as buyer, show the sellers
+            case ChatRole.BUYER:
+                oppositeRole = ChatRole.SELLER;
+                break;
+            // ? If view as seller, show the buyers
+            case ChatRole.SELLER:
+                oppositeRole = ChatRole.BUYER;
+                break;
+            // ? If view as shipper, show the transporters
+            case ChatRole.SHIPPER:
+                oppositeRole = ChatRole.TRANSPORTER;
+                break;
+            // ? If view as transporter, show the shippers
+            case ChatRole.TRANSPORTER:
+                oppositeRole = ChatRole.SHIPPER;
+                break;
+
+        }
+
+        const query = `
+            select distinct csm.menu_id,
+                            csm.id         as sub_menu_id,
+                            name,
+                            icon,
+                            FSM.created_at as favorite_at
+            from "ChatSubMenus" csm
+                     left join public."FavoriteSubMenus" FSM on csm.id = FSM.sub_menu_id
+                     left join public."ChatRooms" CR on csm.id = CR.sub_menu_id
+            where FSM.user_id = :userId
+              and ((
+                       cr.initiator = :userId and
+                       cr.initiator_role = :viewAs and
+                       cr.recipient_role = :oppositeRole
+                       ) or
+                   (
+                       cr.recipient = :userId and
+                       cr.recipient_role = :viewAs and
+                       cr.initiator_role = :oppositeRole
+                       ))
+              and FSM.view_as = :viewAs
+            order by FSM.created_at desc;`
+
+        // * Find all menus favorite by user
+        return await db.sequelize.query(query, {
+            replacements: {
+                userId: userId,
+                viewAs: viewAs,
+                oppositeRole: oppositeRole,
+            },
+            type: sequelize.QueryTypes.SELECT,
+            raw: true
+        });
     }
 }
 

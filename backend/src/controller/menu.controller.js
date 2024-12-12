@@ -19,10 +19,21 @@ class MenuController {
     async favoriteSubMenu(req, res, next) {
         try {
             const {subMenuId} = req.params;
-            const {userId} = req.query;
-            const result = await MenuService.favoriteSubMenu(subMenuId, userId);
+            const {userId, viewAs} = req.query;
+            const result = await MenuService.favoriteSubMenu(subMenuId, userId, viewAs);
             return await SuccessResponse.toJSON(req, res, 200, 'Favorite', result);
 
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getAllMenusFavoriteByUser(req, res, next) {
+        try {
+            const {userId} = req.params;
+            const {viewAs} = req.query;
+            const result = await MenuService.getAllMenusFavoriteByUser(userId, viewAs);
+            return await SuccessResponse.toJSON(req, res, 200, 'Favorite', result);
         } catch (error) {
             next(error);
         }

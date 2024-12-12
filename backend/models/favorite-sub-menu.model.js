@@ -16,6 +16,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.UUID,
             allowNull: false
         },
+        viewAs: {
+            field: 'view_as',
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
         createdAt: {
             field: 'created_at',
             type: DataTypes.DATE,
@@ -29,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: false
     });
 
-    FavoriteSubMenu.associate = function(models) {
+    FavoriteSubMenu.associate = function (models) {
         // associations can be defined here
         FavoriteSubMenu.belongsTo(models.User, {
             foreignKey: 'user_id',
