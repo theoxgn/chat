@@ -5,6 +5,25 @@ const ErrorResponse = require("../response/error.response");
 const ChatRole = require("../enums/chat.role");
 
 class MenuService {
+    async getOppositeRole(viewAs) {
+        switch (viewAs) {
+            // ? If view as buyer, show the sellers
+            case ChatRole.BUYER:
+                return ChatRole.SELLER;
+            // ? If view as seller, show the buyers
+            case ChatRole.SELLER:
+                return ChatRole.BUYER;
+            // ? If view as shipper, show the transporters
+            case ChatRole.SHIPPER:
+                return ChatRole.TRANSPORTER;
+            // ? If view as transporter, show the shippers
+            case ChatRole.TRANSPORTER:
+                return ChatRole.SHIPPER;
+            default:
+                return null;
+        }
+    }
+
     async getAllMenusByUser(userId, viewAs) {
         let oppositeRole = null;
 
@@ -15,25 +34,7 @@ class MenuService {
         }
 
         // * Determine oposite role
-        switch (viewAs) {
-            // ? If view as buyer, show the sellers
-            case ChatRole.BUYER:
-                oppositeRole = ChatRole.SELLER;
-                break;
-            // ? If view as seller, show the buyers
-            case ChatRole.SELLER:
-                oppositeRole = ChatRole.BUYER;
-                break;
-            // ? If view as shipper, show the transporters
-            case ChatRole.SHIPPER:
-                oppositeRole = ChatRole.TRANSPORTER;
-                break;
-            // ? If view as transporter, show the shippers
-            case ChatRole.TRANSPORTER:
-                oppositeRole = ChatRole.SHIPPER;
-                break;
-
-        }
+        oppositeRole = await this.getOppositeRole(viewAs);
 
         const query = `
             SELECT cm.id               as menu_id,
@@ -138,25 +139,7 @@ class MenuService {
         }
 
         // * Determine oposite role
-        switch (viewAs) {
-            // ? If view as buyer, show the sellers
-            case ChatRole.BUYER:
-                oppositeRole = ChatRole.SELLER;
-                break;
-            // ? If view as seller, show the buyers
-            case ChatRole.SELLER:
-                oppositeRole = ChatRole.BUYER;
-                break;
-            // ? If view as shipper, show the transporters
-            case ChatRole.SHIPPER:
-                oppositeRole = ChatRole.TRANSPORTER;
-                break;
-            // ? If view as transporter, show the shippers
-            case ChatRole.TRANSPORTER:
-                oppositeRole = ChatRole.SHIPPER;
-                break;
-
-        }
+        oppositeRole = await this.getOppositeRole(viewAs);
 
         const query = `
             select distinct csm.menu_id,
