@@ -141,7 +141,9 @@ class MessageService {
         return await Message.findAll({
             where: {
                 senderId: {[Op.ne]: userId},
-                status: 'sent'
+                status: {
+                    [Op.or]: [MessageStatus.DELIVERED, MessageStatus.READ]
+                }
             },
             attributes: ['chatRoomId', [fn('COUNT', col('id')), 'count']],
             group: ['chatRoomId'],
@@ -197,7 +199,7 @@ class MessageService {
             senderId: userId,
             content: originalMessage.content,
             messageType: 'text',
-            status: 'sent',
+            status: MessageStatus.DELIVERED,
             isForwarded: true,
             originalMessageId: messageId
         });
