@@ -34,6 +34,16 @@ class MessageController {
         }
     }
 
+    async replyMessage(req, res, next) {
+        try {
+            const {roomId, userId, content, replyTo} = req.body;
+            const result = await MessageService.replyMessage(roomId, userId, content, replyTo);
+            return await SuccessResponse.toJSON(req, res, 201, 'Message replied successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async getUnreadMessagesCount(req, res, next) {
         try {
             const {userId} = req.params;

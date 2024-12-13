@@ -12,13 +12,24 @@ class MessageService {
             where: {
                 chatRoomId: roomId
             },
-            include: [{model: User, as: 'sender', attributes: ['id']}],
+            include: [
+                {
+                    model: User,
+                    as: 'sender',
+                    attributes: ['id']
+                },
+                {
+                    model: Message,
+                    as: 'replyMessage',
+                    attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName']
+                }
+            ],
             order: [['created_at', 'ASC']],
             paranoid: false
         });
 
         return messages.map(message => {
-            if (message.deleted_at) {
+            if (message.deletedAt) {
                 message.content = 'This message was deleted';
             }
             return message;
@@ -76,6 +87,48 @@ class MessageService {
             });
         }
         return updated;
+    }
+
+    async replyMessage(roomId, userId, content, replyTo) {
+        console.log(roomId, userId, content, replyTo)
+        // * Validate user and room
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        const room = await ChatRoom.findByPk(
+            roomId,
+            {
+                include: [
+                    {
+                        model: User,
+                        as: 'recipientUser'
+                    }
+                ]
+            }
+        );
+
+        if (!room) {
+            throw new Error('Room not found');
+        }
+
+        // * Find original message
+        const originalMessage = await Message.findByPk(replyTo);
+        if (!originalMessage) {
+            throw new Error('Original message not found');
+        }
+
+        // * Create reply message
+        return await Message.create({
+            chatRoomId: roomId,
+            senderId: userId,
+            content: content,
+            messageType: MessageType.TEXT,
+            status: MessageStatus.DELIVERED,
+            replyTo: replyTo,
+            originalInitiatorName: user.username,
+            originalRecipientName: room.recipientUser.username
+        });
     }
 
     async getUnreadMessagesCount(userId) {

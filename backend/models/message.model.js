@@ -7,22 +7,18 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true
         },
         chatRoomId: {
-            field: 'chat_room_id',
             type: DataTypes.UUID,
             allowNull: false
         },
         senderId: {
-            field: 'sender_id',
             type: DataTypes.UUID,
             allowNull: false
         },
         content: DataTypes.TEXT,
         mediaUrl: {
-            field: 'media_url',
             type: DataTypes.STRING,
         },
         messageType: {
-            field: 'message_type',
             type: DataTypes.ENUM(['text', 'image', 'document', 'link', 'module'])
         },
         status: {
@@ -30,48 +26,37 @@ module.exports = (sequelize, DataTypes) => {
         },
         originalMessageId: {
             type: DataTypes.UUID,
-            field: 'original_message_id'
         },
         replyTo: {
             type: DataTypes.UUID,
-            field: 'reply_to'
         },
         isForwarded: {
             type: DataTypes.BOOLEAN,
-            field: 'is_forwarded'
         },
         isUpdated: {
             type: DataTypes.BOOLEAN,
-            field: 'is_updated'
         },
         isInformation: {
             type: DataTypes.BOOLEAN,
-            field: 'is_information'
         },
         readAt: {
             type: DataTypes.DATE,
-            field: 'read_at'
         },
         originalInitiatorName: {
             type: DataTypes.STRING,
-            field: 'original_initiator_name'
         },
         originalRecipientName: {
             type: DataTypes.STRING,
-            field: 'original_recipient_name'
         },
         createdAt: {
-            field: 'created_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
         updatedAt: {
-            field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
         deletedAt: {
-            field: 'deleted_at',
             type: DataTypes.DATE
         }
     }, {
@@ -79,9 +64,6 @@ module.exports = (sequelize, DataTypes) => {
         underscored: true,
         timestamps: true,
         paranoid: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
-        deletedAt: 'deleted_at'
     });
 
     Message.associate = function (models) {
@@ -91,15 +73,15 @@ module.exports = (sequelize, DataTypes) => {
             as: 'chatRoom'
         });
         Message.belongsTo(models.User, {
-            foreignKey: 'sender_id',
+            foreignKey: 'senderId',
             as: 'sender'
         });
         Message.belongsTo(models.Message, {
-            foreignKey: 'original_message_id',
+            foreignKey: 'originalMessageId',
             as: 'originalMessage'
         });
         Message.belongsTo(models.Message, {
-            foreignKey: 'reply_to',
+            foreignKey: 'replyTo',
             as: 'replyMessage'
         });
     };
