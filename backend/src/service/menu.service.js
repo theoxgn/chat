@@ -37,24 +37,24 @@ class MenuService {
         oppositeRole = await this.getOppositeRole(viewAs);
 
         const query = `
-            SELECT cm.id               as menu_id,
-                   cm.name             as menu_name,
-                   JSON_AGG(sub_menus) as sub_menus
+            SELECT cm.id               as "menuId",
+                   cm.name             as "menuName",
+                   JSON_AGG(sub_menus) as "subMenus"
             FROM "ChatMenus" cm
                      INNER JOIN (SELECT csm.menu_id,
                                         JSON_BUILD_OBJECT(
-                                                'sub_menu_id', csm.id,
-                                                'sub_menu_name', csm.name,
-                                                'unread_message_count', COALESCE(COUNT(
-                                                                                         CASE
-                                                                                             WHEN m.id IS NOT NULL
-                                                                                                 AND
-                                                                                                  m.sender_id != :userId
-                                                                                                 AND
-                                                                                                  (m.status = 'delivered' OR m.status = 'sent')
-                                                                                                 THEN 1
-                                                                                             END
-                                                                                 ), 0)
+                                                'subMenuId', csm.id,
+                                                'subMenuName', csm.name,
+                                                'unreadMessageCount', COALESCE(COUNT(
+                                                                                       CASE
+                                                                                           WHEN m.id IS NOT NULL
+                                                                                               AND
+                                                                                                m.sender_id != :userId
+                                                                                               AND
+                                                                                                (m.status = 'delivered' OR m.status = 'sent')
+                                                                                               THEN 1
+                                                                                           END
+                                                                               ), 0)
                                         ) as sub_menus
                                  FROM "ChatSubMenus" csm
                                           INNER JOIN "ChatRooms" cr ON cr.sub_menu_id = csm.id
@@ -142,11 +142,11 @@ class MenuService {
         oppositeRole = await this.getOppositeRole(viewAs);
 
         const query = `
-            select distinct csm.menu_id,
-                            csm.id         as sub_menu_id,
+            select distinct csm.menu_id    as "menuId",
+                            csm.id         as "subMenuId",
                             name,
                             icon,
-                            FSM.created_at as favorite_at
+                            FSM.created_at as "favoriteAt"
             from "ChatSubMenus" csm
                      left join public."FavoriteSubMenus" FSM on csm.id = FSM.sub_menu_id
                      left join public."ChatRooms" CR on csm.id = CR.sub_menu_id
