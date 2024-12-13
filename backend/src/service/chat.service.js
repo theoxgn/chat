@@ -148,24 +148,25 @@ class ChatService {
         // * Opposite is role of other user in chatroom
         const chats = await db.sequelize.query(
             `
-                select cr.id                                                           as id,
-                       initiator.id                                                    as initiator_id,
-                       initiator.username                                              as initiator_username,
-                       cr.initiator_role                                               as initiator_role,
-                       recipient.id                                                    as recipient_id,
-                       recipient.username                                              as recipient_username,
-                       cr.recipient_role                                               as recipient_role,
-                       M.content                                                       as last_message_content,
-                       M.created_at                                                    as last_message_created_at,
-                       M.message_type                                                  as last_message_type,
-                       M.status                                                        as last_message_status,
-                       PC.created_at                                                   as pinned_at,
-                       CM.name                                                         as menu_name,
-                       CSM.name                                                        as sub_menu_name,
+                select cr.id                               as id,
+                       initiator.id                        as initiator_id,
+                       initiator.username                  as initiator_username,
+                       cr.initiator_role                   as initiator_role,
+                       recipient.id                        as recipient_id,
+                       recipient.username                  as recipient_username,
+                       cr.recipient_role                   as recipient_role,
+                       M.content                           as last_message_content,
+                       M.created_at                        as last_message_created_at,
+                       M.message_type                      as last_message_type,
+                       M.status                            as last_message_status,
+                       PC.created_at                       as pinned_at,
+                       CM.name                             as menu_name,
+                       CSM.name                            as sub_menu_name,
                        (SELECT COUNT(*)
                         FROM public."Messages" unread
                         WHERE unread.chat_room_id = cr.id
-                          AND (unread.status = 'delivered' or unread.status = 'sent')) as unread_count
+                          AND (unread.status = 'delivered' or unread.status = 'sent')
+                          AND unread.sender_id != :userId) as unread_count
 
                 from "ChatRooms" cr
                          left join public."Users" initiator on cr.initiator = initiator.id
@@ -265,7 +266,8 @@ class ChatService {
                                'unread_count', (SELECT COUNT(*)
                                                 FROM public."Messages" unread
                                                 WHERE unread.chat_room_id = cr.id
-                                                  AND (unread.status = 'delivered' or unread.status = 'sent'))
+                                                  AND (unread.status = 'delivered' or unread.status = 'sent')
+                                                  AND unread.sender_id != :userId)
                        )                  as chats
 
                 from "ChatRooms" cr
