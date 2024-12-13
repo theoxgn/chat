@@ -7,3 +7,11 @@ Show Chatlist sebagai Kategori atau User -> OK  (View Group)
 
 
 12/12/2024
+
+
+13/12/2024
+1. Nama user pengirim dan penerima message disimpan saja sebagai historical data.
+soalnya tidak ikut berubah saat ada perubahan nama user.
+
+2. Buat endpoint untuk perubahan nama user
+3. Tipe message is information akan tampil di tengah
