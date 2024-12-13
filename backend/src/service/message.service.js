@@ -202,6 +202,20 @@ class MessageService {
             originalMessageId: messageId
         });
     }
+
+    async editMessage(messageId, content) {
+        // * Find message
+        const message = await Message.findByPk(messageId);
+        if (!message) {
+            throw new Error('Message not found');
+        }
+
+        // * Update message
+        return await message.update({
+            content,
+            isUpdated: true
+        });
+    }
 }
 
 module.exports = new MessageService();

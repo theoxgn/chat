@@ -92,6 +92,17 @@ class MessageController {
             next(error);
         }
     }
+
+    async editMessage(req, res, next) {
+        try {
+            const {messageId} = req.params;
+            const {content} = req.body;
+            const result = await MessageService.editMessage(messageId, content);
+            return await SuccessResponse.toJSON(req, res, 200, 'Message edited successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new MessageController();
