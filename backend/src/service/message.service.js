@@ -21,7 +21,8 @@ class MessageService {
                 {
                     model: Message,
                     as: 'replyMessage',
-                    attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName']
+                    attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName', "deletedAt"],
+                    paranoid: false
                 }
             ],
             order: [['created_at', 'ASC']],
@@ -31,6 +32,11 @@ class MessageService {
         return messages.map(message => {
             if (message.deletedAt) {
                 message.content = 'This message was deleted';
+            }
+            if (message.replyMessage) {
+                if (message.replyMessage.deletedAt) {
+                    message.replyMessage.content = 'This message was deleted';
+                }
             }
             return message;
         });
