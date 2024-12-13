@@ -7,12 +7,10 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true
         },
         menuId: {
-            field: 'menu_id',
             type: DataTypes.UUID,
             allowNull: false
         },
         subMenuId: {
-            field: 'sub_menu_id',
             type: DataTypes.UUID,
             allowNull: false
         },
@@ -21,7 +19,6 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         initiatorRole: {
-            field: 'initiator_role',
             type: DataTypes.STRING,
             allowNull: false
         },
@@ -30,21 +27,17 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         recipientRole: {
-            field: 'recipient_role',
             type: DataTypes.STRING,
             allowNull: false
         },
         lastActivity: {
-            field: 'last_activity',
             type: DataTypes.DATE,
         },
         createdAt: {
-            field: 'created_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
         updatedAt: {
-            field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         }
@@ -52,18 +45,16 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ChatRooms',
         underscored: true,
         timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at'
     });
 
     ChatRoom.associate = function (models) {
         // associations can be defined here
         ChatRoom.belongsTo(models.ChatMenu, {
-            foreignKey: 'menu_id',
+            foreignKey: 'menuId',
             as: 'menu'
         });
         ChatRoom.belongsTo(models.ChatSubMenu, {
-            foreignKey: 'sub_menu_id',
+            foreignKey: 'subMenuId',
             as: 'subMenu'
         });
         ChatRoom.belongsTo(models.User, {
@@ -75,12 +66,12 @@ module.exports = (sequelize, DataTypes) => {
             as: 'recipientUser'
         });
         ChatRoom.hasMany(models.Message, {
-            foreignKey: 'chat_room_id',
+            foreignKey: 'chatRoomId',
             as: 'messages'
         });
         // Di chat-room.model.js, tambahkan ini di dalam ChatRoom.associate
         ChatRoom.hasMany(models.PinnedChat, {
-            foreignKey: 'chat_room_id',
+            foreignKey: 'chatRoomId',
             as: 'pinnedChats'
         });
     };

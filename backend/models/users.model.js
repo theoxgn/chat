@@ -7,7 +7,6 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true
         },
         muatUserId: {
-            field: 'muat_user_id',
             type: DataTypes.INTEGER,
             allowNull: false
         },
@@ -24,12 +23,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true
         },
         companyName: {
-            field: 'company_name',
             type: DataTypes.STRING,
             allowNull: true
         },
         profilePicture: {
-            field: 'profile_picture',
             type: DataTypes.STRING
         },
         role: {
@@ -39,37 +36,29 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING
         },
         nameChangesCount: {
-            field: 'name_changes_count',
             type: DataTypes.INTEGER
         },
         lastNameChange: {
-            field: 'last_name_change',
             type: DataTypes.DATE
         },
         isVerified: {
-            field: 'is_verified',
             type: DataTypes.BOOLEAN
         },
         referralCode: {
-            field: 'referral_code',
             type: DataTypes.STRING
         },
         lastSeen: {
-            field: 'last_seen',
             type: DataTypes.DATE
         },
         createdAt: {
-            field: 'created_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
         updatedAt: {
-            field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
         deletedAt: {
-            field: 'deleted_at',
             type: DataTypes.DATE
         }
     }, {
@@ -77,15 +66,12 @@ module.exports = (sequelize, DataTypes) => {
         underscored: true,
         timestamps: true,
         paranoid: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
-        deletedAt: 'deleted_at'
     });
 
     // models/user.model.js
     User.associate = function (models) {
         User.hasMany(models.PinnedChat, {
-            foreignKey: 'user_id',
+            foreignKey: 'userId',
             as: 'pinnedChats'
         });
 

@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
 
     PinnedChat.associate = function (models) {
         PinnedChat.belongsTo(models.User, {
-            foreignKey: 'user_id',
+            foreignKey: 'userId',
             as: 'user'
         });
         PinnedChat.belongsTo(models.ChatRoom, {

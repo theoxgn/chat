@@ -12,12 +12,10 @@ module.exports = (sequelize, DataTypes) => {
         },
         icon: DataTypes.STRING,
         createdAt: {
-            field: 'created_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
         updatedAt: {
-            field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         }
@@ -25,13 +23,11 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ChatMenus',
         underscored: true,
         timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at'
     });
 
     ChatMenu.associate = function (models) {
         ChatMenu.hasMany(models.ChatSubMenu, {
-            foreignKey: 'menu_id',
+            foreignKey: 'menuId',
             as: 'subMenus'
         });
     };

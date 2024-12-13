@@ -69,7 +69,7 @@ module.exports = (sequelize, DataTypes) => {
     Message.associate = function (models) {
         // associations can be defined here
         Message.belongsTo(models.ChatRoom, {
-            foreignKey: 'chat_room_id',
+            foreignKey: 'chatRoomId',
             as: 'chatRoom'
         });
         Message.belongsTo(models.User, {

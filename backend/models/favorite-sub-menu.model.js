@@ -7,22 +7,18 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true
         },
         userId: {
-            field: 'user_id',
             type: DataTypes.UUID,
             allowNull: false
         },
         subMenuId: {
-            field: 'sub_menu_id',
             type: DataTypes.UUID,
             allowNull: false
         },
         viewAs: {
-            field: 'view_as',
             type: DataTypes.STRING,
             allowNull: false,
         },
         createdAt: {
-            field: 'created_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         }
@@ -30,18 +26,17 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'FavoriteSubMenus',
         underscored: true,
         timestamps: true,
-        createdAt: 'created_at',
         updatedAt: false
     });
 
     FavoriteSubMenu.associate = function (models) {
         // associations can be defined here
         FavoriteSubMenu.belongsTo(models.User, {
-            foreignKey: 'user_id',
+            foreignKey: 'userId',
             as: 'user'
         });
         FavoriteSubMenu.belongsTo(models.ChatSubMenu, {
-            foreignKey: 'sub_menu_id',
+            foreignKey: 'subMenuId',
             as: 'subMenu'
         });
     };

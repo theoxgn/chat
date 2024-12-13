@@ -7,7 +7,6 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true
         },
         menuId: {
-            field: 'menu_id',
             type: DataTypes.UUID,
             allowNull: false
         },
@@ -17,12 +16,10 @@ module.exports = (sequelize, DataTypes) => {
         },
         icon: DataTypes.STRING,
         createdAt: {
-            field: 'created_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
         updatedAt: {
-            field: 'updated_at',
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         }
@@ -30,21 +27,19 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ChatSubMenus',
         underscored: true,
         timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
     });
 
-    ChatSubMenu.associate = function(models) {
+    ChatSubMenu.associate = function (models) {
         ChatSubMenu.belongsTo(models.ChatMenu, {
-            foreignKey: 'menu_id',
+            foreignKey: 'menuId',
             as: 'menu'
         });
         ChatSubMenu.hasMany(models.ChatRoom, {
-            foreignKey: 'sub_menu_id',
+            foreignKey: 'subMenuId',
             as: 'chatRooms'
         });
         ChatSubMenu.hasMany(models.FavoriteSubMenu, {
-            foreignKey: 'sub_menu_id',
+            foreignKey: 'subMenuId',
             as: 'favoriteSubMenus'
         });
     };
