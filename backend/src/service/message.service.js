@@ -31,7 +31,18 @@ class MessageService {
         if (!user) {
             throw new Error('User not found');
         }
-        const room = await ChatRoom.findByPk(roomId);
+        const room = await ChatRoom.findByPk(
+            roomId,
+            {
+                include: [
+                    {
+                        model: User,
+                        as: 'recipientUser'
+                    }
+                ]
+            }
+        );
+
         if (!room) {
             throw new Error('Room not found');
         }
@@ -42,7 +53,9 @@ class MessageService {
             senderId: userId,
             content: content,
             messageType: MessageType.TEXT,
-            status: MessageStatus.DELIVERED
+            status: MessageStatus.DELIVERED,
+            originalInitiatorName: user.username,
+            originalRecipientName: room.recipientUser.username
         });
     }
 

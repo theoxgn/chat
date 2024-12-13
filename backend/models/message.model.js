@@ -52,6 +52,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             field: 'read_at'
         },
+        originalInitiatorName: {
+            type: DataTypes.STRING,
+            field: 'original_initiator_name'
+        },
+        originalRecipientName: {
+            type: DataTypes.STRING,
+            field: 'original_recipient_name'
+        },
         createdAt: {
             field: 'created_at',
             type: DataTypes.DATE,

@@ -15,3 +15,4 @@ soalnya tidak ikut berubah saat ada perubahan nama user.
 
 2. Buat endpoint untuk perubahan nama user
 3. Tipe message is information akan tampil di tengah
+4. Refactor all response to camelCase
