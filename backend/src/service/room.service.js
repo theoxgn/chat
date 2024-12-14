@@ -1,9 +1,10 @@
 // * Import model
 const {ChatRoom, ChatMenu, ChatSubMenu} = require('../../models');
 const {Op} = require("sequelize");
+const MessageService = require('./message.service');
 
 class RoomService {
-    async createOrFindRoom(initiatorId, recipientId, initiatorRole, recipientRole, menuName, subMenuName) {
+    async createOrFindRoom(initiatorId, recipientId, initiatorRole, recipientRole, menuName, subMenuName, message) {
         // * check menu and sub menu are exists
         const subMenu = await ChatSubMenu.findOne({
             where: {
@@ -51,6 +52,12 @@ class RoomService {
             recipient: recipientId,
             recipientRole
         });
+
+        // * If has message, create message in the room
+        if (message) {
+            await MessageService.createMessage(result.id, initiatorId, message);
+        }
+
         return {
             id: result.id,
             created_at: result.created_at
