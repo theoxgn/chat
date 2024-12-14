@@ -70,6 +70,11 @@ io.on('connection', (socket) => {
     // !Handle typing status
     socket.on('set_typing', (data) => {
         const {roomId, userId, typing} = data;
+
+        // send to all clients
+        io.emit('receive_typing', {userId, typing});
+        
+        // send to specific room
         socket.to(roomId).emit('receive_typing', {userId, typing});
     });
 
