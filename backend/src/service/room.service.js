@@ -37,6 +37,10 @@ class RoomService {
             }
         });
         if (existingRoom) {
+            // * If has message, create message in the room
+            if (message) {
+                await MessageService.createMessage(existingRoom.id, initiatorId, message);
+            }
             return {
                 id: existingRoom.id,
                 created_at: existingRoom.created_at
