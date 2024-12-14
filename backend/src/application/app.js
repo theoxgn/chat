@@ -67,32 +67,22 @@ io.on('connection', (socket) => {
         io.emit('user_status_changed', {userId, online: false});
     });
 
-    // !Handle user connection
-    socket.on('user_connected', (userId) => {
-        socket.userId = userId;
-        io.emit('user_connected');
+    // !Handle typing status
+    socket.on('set_typing', (data) => {
+        const {roomId, userId, typing} = data;
+        socket.to(roomId).emit('receive_typing', {userId, typing});
     });
 
-    // !Handle user joining room
-    socket.on('join_room', async (data) => {
-        const {userId, roomId} = data;
+    // !Handle room joining
+    socket.on('join_room', (roomId) => {
         socket.join(roomId);
+        console.log(`User ${socket.id} joined room ${roomId}`);
+    });
 
-        try {
-            const result = await pool.query(
-                'SELECT EXISTS(SELECT 1 FROM chat_participants WHERE user_id = $1 AND room_id = $2)',
-                [userId, roomId]
-            );
-
-            if (!result.rows[0].exists) {
-                await pool.query(
-                    'INSERT INTO chat_participants (user_id, room_id) VALUES ($1, $2)',
-                    [userId, roomId]
-                );
-            }
-        } catch (error) {
-            console.error('Error joining room:', error);
-        }
+    // !Handle room leaving
+    socket.on('leave_room', (roomId) => {
+        socket.leave(roomId);
+        console.log(`User ${socket.id} left room ${roomId}`);
     });
 
     // !Handle user sending message
