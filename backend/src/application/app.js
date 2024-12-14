@@ -39,18 +39,32 @@ app.use(menuRouter);
 
 // *Socket.IO connection handling
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    console.log('User connected to socketio:', socket.id);
 
     // !Handle user online status
-    socket.on('user_online', (userId) => {
-        onlineUsers.set(userId, true);
-        io.emit('user_status_change', {userId, online: true});
+    socket.on('set_online_user', (userId) => {
+        onlineUsers.set(userId, socket.id);
+        console.log('User online:', userId);
+
+        // Broadcast ke semua client bahwa user ini online
+        io.emit('user_status_changed', {
+            userId,
+            status: 'online'
+        });
+
+        // Kirim daftar semua user yang online ke client yang baru connect
+        socket.emit('get_online_users', Array.from(onlineUsers.keys()));
+    });
+
+    // !Handle get online users
+    socket.on('get_online_users', () => {
+        socket.emit('get_online_users', Array.from(onlineUsers.keys()));
     });
 
     // !Handle user offline status
-    socket.on('user_offline', (userId) => {
+    socket.on('set_user_offline', (userId) => {
         onlineUsers.delete(userId);
-        io.emit('user_status_change', {userId, online: false});
+        io.emit('user_status_changed', {userId, online: false});
     });
 
     // !Handle user connection
@@ -105,7 +119,7 @@ io.on('connection', (socket) => {
         for (const [userId, socketId] of onlineUsers.entries()) {
             if (socketId === socket.id) {
                 onlineUsers.delete(userId);
-                io.emit('user_status_change', {userId, online: false});
+                io.emit('user_status_changed', {userId, online: false});
                 break;
             }
         }

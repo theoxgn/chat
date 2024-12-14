@@ -166,7 +166,11 @@ class ChatService {
                         FROM public."Messages" unread
                         WHERE unread.chat_room_id = cr.id
                           AND (unread.status = 'delivered' or unread.status = 'sent')
-                          AND unread.sender_id != :userId) as "unreadCount"
+                          AND unread.sender_id != :userId) as "unreadCount",
+                       CASE
+                           WHEN initiator.id = :userId THEN recipient.username
+                           ELSE initiator.username
+                           END                             as "chatName"
                 from "ChatRooms" cr
                          left join public."Users" initiator on cr.initiator = initiator.id
                          left join public."Users" recipient on cr.recipient = recipient.id
@@ -267,8 +271,11 @@ class ChatService {
                                                WHERE unread.chat_room_id = cr.id
                                                  AND (unread.status = 'delivered' or unread.status = 'sent')
                                                  AND unread.sender_id != :userId)
-                       )                  as chats
-
+                       )                  as chats,
+                       CASE
+                           WHEN initiator.id = :userId THEN recipient.username
+                           ELSE initiator.username
+                           END            as "chatName"
                 from "ChatRooms" cr
                          left join public."Users" initiator on cr.initiator = initiator.id
                          left join public."Users" recipient on cr.recipient = recipient.id
