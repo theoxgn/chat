@@ -71,6 +71,7 @@ class MenuService {
                                                                            )
                                           LEFT JOIN "Messages" m ON m.chat_room_id = cr.id
                                           LEFT JOIN "FavoriteSubMenus" fsm ON fsm.sub_menu_id = csm.id
+                                 WHERE m.id IS NOT NULL
                                  GROUP BY csm.menu_id, csm.id, csm.name) subquery ON subquery.menu_id = cm.id
             GROUP BY cm.id, cm.name
             ORDER BY cm.id        `;
