@@ -149,12 +149,6 @@ class ChatService {
         const chats = await db.sequelize.query(
             `
                 select cr.id                               as "id",
-                       initiator.id                        as "initiatorId",
-                       initiator.username                  as "initiatorUsername",
-                       cr.initiator_role                   as "initiatorRole",
-                       recipient.id                        as "recipientId",
-                       recipient.username                  as "recipientUsername",
-                       cr.recipient_role                   as "recipientRole",
                        M.content                           as "lastMessageContent",
                        M.created_at                        as "lastMessageCreatedAt",
                        M.message_type                      as "lastMessageType",
@@ -170,7 +164,11 @@ class ChatService {
                        CASE
                            WHEN initiator.id = :userId THEN recipient.username
                            ELSE initiator.username
-                           END                             as "chatName"
+                           END                             as "opponentName",
+                       CASE
+                           WHEN initiator.id = :userId THEN recipient.id
+                           ELSE initiator.id
+                           END                             as "opponentId"
                 from "ChatRooms" cr
                          left join public."Users" initiator on cr.initiator = initiator.id
                          left join public."Users" recipient on cr.recipient = recipient.id
@@ -251,14 +249,8 @@ class ChatService {
         // * Opposite is role of other user in chatroom
         const chats = await db.sequelize.query(
             `
-                select cr.id              as id,
-                       initiator.id       as "initiatorId",
-                       initiator.username as "initiatorUsername",
-                       cr.initiator_role  as "initiatorRole",
-                       recipient.id       as "recipientId",
-                       recipient.username as "recipientUsername",
-                       cr.recipient_role  as "recipientRole",
-                       PC.created_at      as "pinnedAt",
+                select cr.id         as id,
+                       PC.created_at as "pinnedAt",
                        json_build_object(
                                'lastMessageContent', M.content,
                                'lastMessageCreatedAt', M.created_at,
@@ -271,11 +263,15 @@ class ChatService {
                                                WHERE unread.chat_room_id = cr.id
                                                  AND (unread.status = 'delivered' or unread.status = 'sent')
                                                  AND unread.sender_id != :userId)
-                       )                  as chats,
+                       )             as chats,
                        CASE
                            WHEN initiator.id = :userId THEN recipient.username
                            ELSE initiator.username
-                           END            as "chatName"
+                           END       as "opponentName",
+                       CASE
+                           WHEN initiator.id = :userId THEN recipient.id
+                           ELSE initiator.id
+                           END       as "opponentId"
                 from "ChatRooms" cr
                          left join public."Users" initiator on cr.initiator = initiator.id
                          left join public."Users" recipient on cr.recipient = recipient.id
