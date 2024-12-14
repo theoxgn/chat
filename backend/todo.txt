@@ -15,4 +15,9 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 
 2. Buat endpoint untuk perubahan nama user dan company (untuk pesan "Pembeli telah merubah nama menjadi pembeli baru")
 3. Tipe message is information akan tampil di tengah
-4. Refactor all response to camelCase -> On Progress
+4. Refactor all response to camelCase -> OK
+
+14/12/2024
+1. simpan replyFromOriginalName
+2. re check originalInitiatorName & originalRecipientName why i see some different
+3. bold information oldData and newData
