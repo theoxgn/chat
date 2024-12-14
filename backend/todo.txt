@@ -13,8 +13,8 @@ Show Chatlist sebagai Kategori atau User -> OK  (View Group)
 1. Nama user pengirim dan penerima message disimpan saja sebagai historical data.
 soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 
-2. Buat endpoint untuk perubahan nama user dan company (untuk pesan "Pembeli telah merubah nama menjadi pembeli baru")
-3. Tipe message is information akan tampil di tengah
+2. Buat endpoint untuk perubahan nama user dan company (untuk pesan "Pembeli telah merubah nama menjadi pembeli baru") -> OK
+3. Tipe message is information akan tampil di tengah -> OK
 4. Refactor all response to camelCase -> OK
 
 14/12/2024
