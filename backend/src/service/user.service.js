@@ -3,6 +3,8 @@ const {User} = require('../../models');
 const {Op} = require("sequelize");
 const ErrorResponse = require("../response/error.response");
 
+const MenuService = require("./menu.service");
+
 class UserService {
     async checkUserExists(username, muatUserId) {
         // * Find user by username or muatUserId
@@ -12,6 +14,15 @@ class UserService {
                     {username: username},
                     {muatUserId: muatUserId}
                 ]
+            }
+        });
+    }
+
+    async getOpponentUsers(role) {
+        let roleOpponent = await MenuService.getOppositeRole(role);
+        return User.findAll({
+            where: {
+                role: roleOpponent
             }
         });
     }

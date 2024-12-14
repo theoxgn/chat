@@ -29,6 +29,18 @@ class UserController {
         }
     }
 
+    async getOpponentUsers(req, res, next) {
+        try {
+            const {
+                role
+            } = req.query;
+            const result = await UserService.getOpponentUsers(role);
+            return SuccessResponse.toJSON(req, res, 200, 'Opponent users retrieved successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async updateUser(req, res, next) {
         try {
             const {muatUserId, username, companyName} = req.body;
