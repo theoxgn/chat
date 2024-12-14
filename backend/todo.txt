@@ -23,8 +23,9 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 3. bold information oldData and newData -> OK
 4. Integrating socketio
     - Typing status
-    - Online status
+    - Online status -> OK
     - Last seen
     - Message status
     - Chat list
     - Menu
+5. If view as "buyer", it will be showing lists of "seller". then show companyName instead of userName -> OK
