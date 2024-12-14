@@ -29,6 +29,18 @@ class UserController {
         }
     }
 
+    async getAllUsersByRole(req, res, next) {
+        try {
+            const {
+                role
+            } = req.query;
+            const result = await UserService.getAllUsersByRole(role);
+            return SuccessResponse.toJSON(req, res, 200, 'Users retrieved successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async getOpponentUsers(req, res, next) {
         try {
             const {

@@ -87,6 +87,14 @@ class UserService {
             }
         });
     }
+
+    async getAllUsersByRole(role) {
+        return User.findAll({
+            where: {
+                role
+            }
+        });
+    }
 }
 
 module.exports = new UserService();
