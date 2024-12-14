@@ -5,12 +5,12 @@ const UserService = require("../service/user.service");
 class UserController {
     async createUser(req, res, next) {
         try {
-            const {username, muatUserId} = req.body;
+            const {username, muatUserId, companyName, role} = req.body;
             if (!username) {
                 throw new ErrorResponse(400, "Bad Request", "Username is required");
             }
 
-            const result = await UserService.createUser(username, muatUserId);
+            const result = await UserService.createUser(username, muatUserId, companyName, role);
             return SuccessResponse.toJSON(req, res, 201, 'User created successfully', result);
         } catch (error) {
             next(error);

@@ -16,17 +16,19 @@ class UserService {
         });
     }
 
-    async createUser(username, muatUserId) {
+    async createUser(username, muatUserId, companyName, role) {
         // * First check if user exists
-        const existingUser = await this.checkUserExists(username, muatUserId);
+        const existingUser = await this.checkUserExists(username, muatUserId, companyName, role);
         if (existingUser) {
             return existingUser; // Return existing user instead of creating new one
         }
 
         // * Create new user
-        return User.create({
+        return await User.create({
             username: username,
-            muatUserId: muatUserId
+            muatUserId: muatUserId,
+            companyName: companyName,
+            role: role
         });
     }
 
