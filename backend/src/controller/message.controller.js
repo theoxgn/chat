@@ -103,6 +103,16 @@ class MessageController {
             next(error);
         }
     }
+
+    async createInformationMessage(req, res, next) {
+        try {
+            const {userId, informationType, newData} = req.body;
+            const result = await MessageService.createInformationMessage(userId, informationType, newData);
+            return await SuccessResponse.toJSON(req, res, 201, 'Information message sent successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new MessageController();

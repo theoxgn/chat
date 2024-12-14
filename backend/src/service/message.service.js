@@ -4,6 +4,7 @@ const {Message, User, ChatRoom} = require("../../models");
 const {Op, fn, col} = require("sequelize");
 const MessageStatus = require("../enums/message.status");
 const MessageType = require("../enums/message.type");
+const MessageInformationType = require("../enums/message.information.type");
 
 class MessageService {
     async getMessagesByRoomId(roomId) {
@@ -217,6 +218,46 @@ class MessageService {
             content,
             isUpdated: true
         });
+    }
+
+    async createInformationMessage(userId, informationType, newData) {
+        // * Validate user
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // * Fetch all rooms of user
+        const rooms = await ChatRoom.findAll({
+            where: {
+                [Op.or]: [
+                    {initiator: userId}
+                ]
+            }
+        });
+
+        // * Create content based on information type
+        let content = '';
+        switch (informationType) {
+            case MessageInformationType.NAME_CHANGED:
+                content = `${user.username} telah mengubah nama menjadi ${newData}`;
+                break;
+
+        }
+
+        // * Create information message for each room
+        const messages = rooms.map(room => ({
+            chatRoomId: room.id,
+            senderId: userId,
+            content: content,
+            messageType: MessageType.TEXT,
+            isInformation: true,
+            status: MessageStatus.DELIVERED,
+            originalInitiatorName: user.username,
+            originalRecipientName: null
+        }));
+
+        return await Message.bulkCreate(messages);
     }
 }
 

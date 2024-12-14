@@ -7,6 +7,7 @@ const MessageController = require('../controller/message.controller');
 // * Messages endpoint
 messagesRouter.get('/api/messages/:roomId', MessageController.getMessagesByRoomId);
 messagesRouter.post('/api/messages', MessageController.createMessage);
+messagesRouter.post('/api/messages/information', MessageController.createInformationMessage);
 messagesRouter.post('/api/messages/read', MessageController.readMessage);
 messagesRouter.post('/api/messages/reply', MessageController.replyMessage);
 messagesRouter.post('/api/messages/forward', MessageController.forwardMessage);
