@@ -9,6 +9,7 @@ const userRouter = Router();
 
 userRouter.post('/api/users', UserController.createUser);
 userRouter.get('/api/users', UserController.getAllUsers);
+userRouter.put('/api/users', UserController.updateUser);
 userRouter.get('/api/users/online', UserController.getOnlineUsers);
 
 module.exports = userRouter;

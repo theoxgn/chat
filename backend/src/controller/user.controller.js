@@ -29,6 +29,16 @@ class UserController {
         }
     }
 
+    async updateUser(req, res, next) {
+        try {
+            const {muatUserId, username, companyName} = req.body;
+            const result = await UserService.updateUser(muatUserId, username, companyName);
+            return SuccessResponse.toJSON(req, res, 200, 'User updated successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async getOnlineUsers(req, res, next) {
         try {
             const result = await UserService.getOnlineUsers();

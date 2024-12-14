@@ -1,6 +1,7 @@
 const onlineUsers = require("../store/onlineUsers.store");
 const {User} = require('../../models');
 const {Op} = require("sequelize");
+const ErrorResponse = require("../response/error.response");
 
 class UserService {
     async checkUserExists(username, muatUserId) {
@@ -48,6 +49,30 @@ class UserService {
 
     async getOnlineUsers() {
         return Array.from(onlineUsers.keys());
+    }
+
+    async updateUser(muatId, username, companyName) {
+        // * Validate if user exists
+        const existingUser = await User.findOne({
+            where: {
+                muatUserId: muatId
+            }
+        });
+        if (!existingUser) {
+            throw new ErrorResponse(404, 'Not Found', 'User not found');
+        }
+
+        // * Update user by userId
+        return await User.update({
+            username: username,
+            companyName: companyName,
+            lastNameChange: new Date(),
+            nameChangesCount: existingUser.nameChangesCount + 1
+        }, {
+            where: {
+                muatUserId: muatId
+            }
+        });
     }
 }
 
