@@ -113,20 +113,28 @@ io.on('connection', (socket) => {
         }
     });
 
-    // !Handle user leaving room (disconnect)
+    // !Handle disconnect
     socket.on('disconnect', () => {
-        // Find and remove disconnected user
+        // Cari userId berdasarkan socket.id yang disconnect
+        let disconnectedUserId = null;
         for (const [userId, socketId] of onlineUsers.entries()) {
             if (socketId === socket.id) {
-                onlineUsers.delete(userId);
-                io.emit('user_status_changed', {userId, online: false});
+                disconnectedUserId = userId;
                 break;
             }
         }
-        if (socket.userId) {
-            io.emit('user_disconnected');
+
+        if (disconnectedUserId) {
+            // Hapus user dari daftar online
+            onlineUsers.delete(disconnectedUserId);
+            console.log('User disconnected:', disconnectedUserId);
+
+            // Broadcast ke semua client bahwa user ini offline
+            io.emit('user_status_changed', {
+                userId: disconnectedUserId,
+                status: 'offline'
+            });
         }
-        console.log('User disconnected:', socket.id);
     });
 });
 
