@@ -126,7 +126,7 @@ class MessageService {
         }
 
         // * Create reply message
-        return await Message.create({
+        const message = await Message.create({
             chatRoomId: roomId,
             senderId: userId,
             content: content,
@@ -136,6 +136,26 @@ class MessageService {
             originalInitiatorName: user.username,
             originalRecipientName: room.recipientUser.username
         });
+
+        // Then fetch with the association
+        const messageWithReply = await Message.findByPk(message.id, {
+            include: [{
+                model: Message,
+                as: 'replyMessage',
+                attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName', "deletedAt"],
+                paranoid: false
+            }]
+        });
+
+        if (messageWithReply.deletedAt) {
+            messageWithReply.content = 'This message was deleted';
+        }
+        if (messageWithReply.replyMessage) {
+            if (messageWithReply.replyMessage.deletedAt) {
+                messageWithReply.replyMessage.content = 'This message was deleted';
+            }
+        }
+        return messageWithReply;
     }
 
     async getUnreadMessagesCount(userId) {
