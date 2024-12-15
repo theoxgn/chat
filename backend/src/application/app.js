@@ -134,6 +134,14 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('message_deleted', deletedMessage);
     });
 
+    // !Handle message reply
+    socket.on('reply_message', async (data) => {
+        const {roomId, userId, content, replyTo} = data;
+        console.log(data, " <-- received on server");
+        const replyMessage = await MessageServices.replyMessage(roomId, userId, content, replyTo);
+        io.to(roomId).emit('message_replied', replyMessage);
+    });
+
     // !Handle disconnect
     socket.on('disconnect', () => {
         // Cari userId berdasarkan socket.id yang disconnect
