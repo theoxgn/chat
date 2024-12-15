@@ -29,9 +29,10 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
     - Message status (read) -> OK
     - Chat list
     - Menu
-    - Delete message
-    - Edit message
-    - Add message
-    - Reply message
-    - Forward message
+    - Delete message -> OK
+    - Edit message -> OK
+    - Add message -> OK
+    - Reply message -> OK
+    - Forward message -> OK
 5. If view as "buyer", it will be showing lists of "seller". then show companyName instead of userName -> OK
+6. reply, forward in opponent chat -> OK
