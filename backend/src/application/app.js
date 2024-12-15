@@ -142,6 +142,14 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('message_replied', replyMessage);
     });
 
+    // !Handle message forward
+    socket.on('forward_message', async (data) => {
+        const {targetRoomId, userId, messageId} = data;
+        console.log(data, " <-- received on server");
+        const forwardMessage = await MessageServices.forwardMessage(messageId, targetRoomId, userId);
+        io.to(targetRoomId).emit('receive_message', forwardMessage);
+    });
+
     // !Handle disconnect
     socket.on('disconnect', () => {
         // Cari userId berdasarkan socket.id yang disconnect
