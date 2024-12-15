@@ -118,6 +118,14 @@ io.on('connection', (socket) => {
         console.log(updated, " <-- message read on server");
     });
 
+    // !Handle message update
+    socket.on('update_message', async (data) => {
+        const {roomId, messageId, content} = data;
+        console.log(data, " <-- received on server");
+        const updatedMessage = await MessageServices.editMessage(messageId, content);
+        io.to(roomId).emit('message_updated', updatedMessage);
+    });
+
     // !Handle disconnect
     socket.on('disconnect', () => {
         // Cari userId berdasarkan socket.id yang disconnect
