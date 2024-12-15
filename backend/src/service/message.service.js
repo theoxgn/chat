@@ -180,11 +180,14 @@ class MessageService {
     }
 
     async deleteMessage(messageId) {
-        return await Message.destroy({
+        await Message.destroy({
             where: {
                 id: messageId
             }
         });
+        const deleted = await Message.findByPk(messageId, {paranoid: false});
+        deleted.content = 'This message was deleted';
+        return deleted;
     }
 
     async forwardMessage(messageId, targetRoomId, userId) {

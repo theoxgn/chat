@@ -126,6 +126,14 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('message_updated', updatedMessage);
     });
 
+    // !Handle message delete
+    socket.on('delete_message', async (data) => {
+        const {roomId, messageId} = data;
+        console.log(data, " <-- received on server");
+        const deletedMessage = await MessageServices.deleteMessage(messageId);
+        io.to(roomId).emit('message_deleted', deletedMessage);
+    });
+
     // !Handle disconnect
     socket.on('disconnect', () => {
         // Cari userId berdasarkan socket.id yang disconnect
