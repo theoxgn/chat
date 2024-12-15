@@ -21,11 +21,17 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 1. simpan replyFromOriginalName
 2. re check originalInitiatorName & originalRecipientName why i see some different
 3. bold information oldData and newData -> OK
-4. Integrating socketio
-    - Typing status
+4. Integrating socketio (realtime)
+    - Typing status global -> OK
+    - Typing status private -> OK
     - Online status -> OK
     - Last seen
-    - Message status
+    - Message status (read) -> OK
     - Chat list
     - Menu
+    - Delete message
+    - Edit message
+    - Add message
+    - Reply message
+    - Forward message
 5. If view as "buyer", it will be showing lists of "seller". then show companyName instead of userName -> OK
