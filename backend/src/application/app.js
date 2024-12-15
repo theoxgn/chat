@@ -76,7 +76,7 @@ io.on('connection', (socket) => {
 
         // send to all clients
         io.emit('receive_typing', {userId, typing});
-        
+
         // send to specific room
         socket.to(roomId).emit('receive_typing', {userId, typing});
     });
@@ -100,6 +100,22 @@ io.on('connection', (socket) => {
         const message = await MessageServices.createMessage(roomId, userId, content);
         console.log(message, " <-- message created on server");
         io.to(roomId).emit('receive_message', message);
+    });
+
+    // !Handle message read
+    socket.on('read_message', async (data) => {
+        const {roomId, userId, messageIds} = data;
+
+        // Update in database
+        const updated = await MessageServices.readMessage(roomId, userId, messageIds);
+
+        // Broadcast to all clients in the room that messages have been read
+        console.log("sending message read update to room", roomId);
+        socket.to(roomId).emit('message_read_update', {
+            messageIds
+        });
+
+        console.log(updated, " <-- message read on server");
     });
 
     // !Handle disconnect
