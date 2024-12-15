@@ -43,3 +43,8 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
     - document (pdf, doc)
     - other file
     - module
+9. Searching message & users
+10. Chat list pagination
+11. Chat room pagination
+12. Chat list filter (frontend)
+13. View as category
