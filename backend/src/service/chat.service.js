@@ -5,7 +5,7 @@ const db = require("../../models");
 const {QueryTypes} = require("sequelize");
 
 class ChatService {
-    // TODO: Use Socketio
+    // * Already implement socket.io (see in app.js)
     async createChatTypingStatus(roomId, userId, typing) {
         const roomKey = `room:${roomId}`;
         let roomTyping = typingUsers.get(roomKey) || new Set();
@@ -38,7 +38,7 @@ class ChatService {
 
     }
 
-    // TODO: Use Socketio
+    // * Already implement socket.io (see in app.js)
     async getChatTypingStatus(roomKey) {
         const roomTyping = typingUsers.get(roomKey) || new Set();
         return {
