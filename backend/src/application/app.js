@@ -27,6 +27,9 @@ const adminRouter = require('../route/admin.route');
 const fileRouter = require('../route/file.route');
 const menuRouter = require('../route/menu.route');
 
+// * Import services
+const MessageServices = require('../service/message.service');
+
 app.use(cors());
 app.use(express.json());
 app.use(userRouter);
@@ -93,19 +96,10 @@ io.on('connection', (socket) => {
     // !Handle user sending message
     socket.on('send_message', async (data) => {
         const {roomId, userId, content} = data;
-        console.log(data, " aku di server")
-        try {
-            const result = await pool.query(
-                `INSERT INTO messages (room_id, user_id, content)
-                 VALUES ($1, $2, $3)
-                 RETURNING *, (SELECT username FROM users WHERE id = $2)`,
-                [roomId, userId, content]
-            );
-
-            io.to(roomId).emit('receive_message', result.rows[0]);
-        } catch (error) {
-            console.error('Error sending message:', error);
-        }
+        console.log(data, " <-- received on server");
+        const message = await MessageServices.createMessage(roomId, userId, content);
+        console.log(message, " <-- message created on server");
+        io.to(roomId).emit('receive_message', message);
     });
 
     // !Handle disconnect
