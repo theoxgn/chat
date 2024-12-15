@@ -1,5 +1,4 @@
 const pool = require("../config/postgres");
-const {io} = require("../application/app");
 const {Message, User, ChatRoom} = require("../../models");
 const {Op, fn, col} = require("sequelize");
 const MessageStatus = require("../enums/message.status");
@@ -85,14 +84,14 @@ class MessageService {
         );
 
         // Emit read receipt event
-        if (io) {
-            io.to(roomId).emit('messages_read', {
-                roomId,
-                userId,
-                messageIds,
-                readAt: new Date()
-            });
-        }
+        // if (io) {
+        //     io.to(roomId).emit('messages_read', {
+        //         roomId,
+        //         userId,
+        //         messageIds,
+        //         readAt: new Date()
+        //     });
+        // }
         return updated;
     }
 
