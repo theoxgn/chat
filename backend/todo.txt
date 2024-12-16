@@ -44,8 +44,12 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
     - other file
     - module
 9. Searching message & users -> OK backend
-10. Chat list pagination
-11. Chat room pagination
-12. Chat list filter (frontend)
-13. View as category
-14. Pin chat (frontend)
+    - If user or message found then insert to chatRoom (open chatRoom)
+10. Chat list pagination -> OK backend
+11. Chat room pagination -> OK backend
+12. Chat list filter -> OK backend
+13. View as category -> Ok backend
+14. Pin chat -> OK backend
+15. reconnect / rejoin room
+16. status jam pasir -> OK
+17. status icon -> OK
