@@ -67,6 +67,10 @@ class RoomService {
             created_at: result.created_at
         }
     }
+
+    async getRoomById(roomId) {
+        return await ChatRoom.findByPk(roomId);
+    }
 }
 
 module.exports = new RoomService();

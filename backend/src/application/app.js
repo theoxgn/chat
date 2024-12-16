@@ -29,6 +29,7 @@ const menuRouter = require('../route/menu.route');
 
 // * Import services
 const MessageServices = require('../service/message.service');
+const RoomServices = require('../service/room.service');
 
 app.use(cors());
 app.use(express.json());
@@ -100,6 +101,35 @@ io.on('connection', (socket) => {
         const message = await MessageServices.createMessage(roomId, userId, content);
         console.log(message, " <-- message created on server");
         io.to(roomId).emit('receive_message', message);
+
+        // Dapatkan recipient userId dari database berdasarkan roomId
+        const room = await RoomServices.getRoomById(roomId);
+        // recipientId adalah userId yang bukan sender
+        const recipientId = userId === room.initiator ? room.recipient : room.initiator;
+        // subMenuId adalah subMenu yang sama dengan room
+        const subMenuId = room.subMenuId;
+
+        // Emit update_chat_list hanya ke sender dan recipient dengan subMenu yang sama
+        const senderSocketId = onlineUsers.get(userId);
+        const recipientSocketId = onlineUsers.get(recipientId);
+
+        if (senderSocketId) {
+            io.to(senderSocketId).emit('update_chat_list', {
+                roomId,
+                userId,
+                subMenuId,
+                lastMessage: message
+            });
+        }
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('update_chat_list', {
+                roomId,
+                userId,
+                subMenuId,
+                lastMessage: message
+            });
+        }
     });
 
     // !Handle message read
