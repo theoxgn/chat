@@ -1,6 +1,9 @@
-const ChatService = require('../service/chat.service');
 const ErrorResponse = require("../response/error.response");
 const SuccessResponse = require("../response/success.response");
+
+// * Import Service
+const ChatService = require('../service/chat.service');
+const UserService = require('../service/user.service');
 
 class ChatController {
     // * Already implement socket.io (see in app.js)
@@ -79,6 +82,20 @@ class ChatController {
             } else {
                 throw new ErrorResponse(400, 'Bad Request', 'Invalid groupBy parameter');
             }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async searchChatsUserOrMessage(req, res, next) {
+        try {
+            const {searchTerm, viewAs, subMenuId, currentUserId} = req.query;
+            const usersResult = await UserService.getAllConnectedUsers(searchTerm, viewAs, subMenuId, currentUserId);
+            const chatsResult = []
+            return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', {
+                users: usersResult,
+                chats: chatsResult
+            });
         } catch (error) {
             next(error);
         }

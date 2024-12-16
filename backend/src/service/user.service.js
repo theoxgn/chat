@@ -1,9 +1,10 @@
 const onlineUsers = require("../store/onlineUsers.store");
-const {User} = require('../../models');
+const {User, ChatRoom} = require('../../models');
 const {Op} = require("sequelize");
 const ErrorResponse = require("../response/error.response");
 
 const MenuService = require("./menu.service");
+const ChatRole = require("../enums/chat.role");
 
 class UserService {
     async checkUserExists(username, muatUserId) {
@@ -93,6 +94,91 @@ class UserService {
             where: {
                 role
             }
+        });
+    }
+
+    async getAllConnectedUsers(searchTerm, viewAs, subMenuId, currentUserId) {
+        // * Find opposite role
+        const opponentRole = await MenuService.getOppositeRole(viewAs);
+
+        // * Filter
+        let filter = {};
+        if (searchTerm) {
+            if (opponentRole === ChatRole.BUYER) {
+                filter = {
+                    username: {
+                        [Op.iLike]: `%${searchTerm}%`
+                    }
+                }
+            } else if (opponentRole === ChatRole.SELLER) {
+                filter = {
+                    companyName: {
+                        [Op.iLike]: `%${searchTerm}%`
+                    }
+                }
+            }
+        }
+
+        return await User.findAll({
+            where: {
+                ...filter,
+                role: opponentRole,
+                [Op.or]: [
+                    {'$initiatedChats.id$': {[Op.ne]: null}},
+                    {'$receivedChats.id$': {[Op.ne]: null}}
+                ]
+            },
+            include: [
+                {
+                    model: ChatRoom,
+                    as: 'initiatedChats',
+                    required: false,
+                    where: {
+                        subMenuId: subMenuId,
+                        [Op.or]: [
+                            {
+                                // When opponent is initiator, current user is recipient
+                                initiatorRole: opponentRole,
+                                recipientRole: viewAs,
+                                recipient: currentUserId
+                            },
+                            {
+                                // When opponent is recipient, current user is initiator
+                                initiatorRole: viewAs,
+                                recipientRole: opponentRole,
+                                initiator: currentUserId
+                            }
+                        ]
+                    },
+                    attributes: []
+                },
+                {
+                    model: ChatRoom,
+                    as: 'receivedChats',
+                    required: false,
+                    where: {
+                        subMenuId: subMenuId,
+                        [Op.or]: [
+                            {
+                                // When opponent is initiator, current user is recipient
+                                initiatorRole: opponentRole,
+                                recipientRole: viewAs,
+                                recipient: currentUserId
+                            },
+                            {
+                                // When opponent is recipient, current user is initiator
+                                initiatorRole: viewAs,
+                                recipientRole: opponentRole,
+                                initiator: currentUserId
+                            }
+                        ]
+                    },
+                    attributes: []
+                }
+            ],
+            attributes: ['id', 'companyName', 'username'],
+            group: ['User.id'],
+            raw: true
         });
     }
 }
