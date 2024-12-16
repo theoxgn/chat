@@ -31,6 +31,7 @@ const menuRouter = require('../route/menu.route');
 const MessageServices = require('../service/message.service');
 const RoomServices = require('../service/room.service');
 const SocketService = require('../service/socket.service');
+const UserService = require('../service/user.service');
 
 app.use(cors());
 app.use(express.json());
@@ -47,7 +48,7 @@ io.on('connection', (socket) => {
     console.log('User connected to socketio:', socket.id);
 
     // !Handle user online status
-    socket.on('set_online_user', (userId) => {
+    socket.on('set_online_user', async (userId) => {
         onlineUsers.set(userId, socket.id);
         console.log('User online:', userId);
 
@@ -59,6 +60,9 @@ io.on('connection', (socket) => {
 
         // Kirim daftar semua user yang online ke client yang baru connect
         socket.emit('get_online_users', Array.from(onlineUsers.keys()));
+
+        // Update last seen
+        await UserService.updateUserLastSeen(userId);
     });
 
     // !Handle get online users
@@ -67,9 +71,12 @@ io.on('connection', (socket) => {
     });
 
     // !Handle user offline status
-    socket.on('set_user_offline', (userId) => {
+    socket.on('set_user_offline', async (userId) => {
         onlineUsers.delete(userId);
         io.emit('user_status_changed', {userId, online: false});
+
+        // Update last seen
+        await UserService.updateUserLastSeen(userId);
     });
 
     // !Handle typing status
@@ -165,7 +172,7 @@ io.on('connection', (socket) => {
     });
 
     // !Handle disconnect
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
         // Cari userId berdasarkan socket.id yang disconnect
         let disconnectedUserId = null;
         for (const [userId, socketId] of onlineUsers.entries()) {
@@ -185,6 +192,9 @@ io.on('connection', (socket) => {
                 userId: disconnectedUserId,
                 status: 'offline'
             });
+
+            // Update last seen
+            await UserService.updateUserLastSeen(disconnectedUserId);
         }
     });
 });

@@ -181,6 +181,16 @@ class UserService {
             raw: true
         });
     }
+
+    async updateUserLastSeen(userId) {
+        return await User.update({
+            lastSeen: new Date()
+        }, {
+            where: {
+                id: userId
+            }
+        });
+    }
 }
 
 module.exports = new UserService();
