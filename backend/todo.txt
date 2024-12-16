@@ -27,8 +27,8 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
     - Online status -> OK
     - Last seen
     - Message status (read) -> OK
-    - Chat list
-    - Menu
+    - Chat list -> OK
+    - Menu -> OK
     - Delete message -> OK
     - Edit message -> OK
     - Add message -> OK
@@ -43,7 +43,7 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
     - document (pdf, doc)
     - other file
     - module
-9. Searching message & users
+9. Searching message & users -> OK backend
 10. Chat list pagination
 11. Chat room pagination
 12. Chat list filter (frontend)
