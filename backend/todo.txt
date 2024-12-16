@@ -34,8 +34,8 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
     - Add message -> OK
     - Reply message -> OK
     - Forward message -> OK
-5. If view as "buyer", it will be showing lists of "seller". then show companyName instead of userName -> OK
-6. reply, forward in opponent chat
+5. If view as "buyer", it will be showing lists of "seller". then show companyName instead of userName
+6. reply, forward in opponent chat -> OK
 7. fixing online offline status
 8. media
     - image
@@ -48,3 +48,4 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 11. Chat room pagination
 12. Chat list filter (frontend)
 13. View as category
+14. Pin chat (frontend)

@@ -162,7 +162,8 @@ class ChatService {
                           AND (unread.status = 'delivered' or unread.status = 'sent')
                           AND unread.sender_id != :userId) as "unreadCount",
                        CASE
-                           WHEN initiator.id = :userId THEN recipient.username
+                           WHEN initiator.id = :userId AND :viewAs = 'buyer' THEN recipient.company_name
+                           WHEN initiator.id = :userId AND :viewAs != 'buyer' THEN recipient.username
                            ELSE initiator.username
                            END                             as "opponentName",
                        CASE
@@ -265,7 +266,8 @@ class ChatService {
                                                  AND unread.sender_id != :userId)
                        )             as chats,
                        CASE
-                           WHEN initiator.id = :userId THEN recipient.username
+                           WHEN initiator.id = :userId AND :viewAs = 'buyer' THEN recipient.company_name
+                           WHEN initiator.id = :userId AND :viewAs != 'buyer' THEN recipient.username
                            ELSE initiator.username
                            END       as "opponentName",
                        CASE
