@@ -140,6 +140,7 @@ class ChatService {
                        M.created_at                        as "lastMessageCreatedAt",
                        M.message_type                      as "lastMessageType",
                        M.status                            as "lastMessageStatus",
+                       M.sender_id                         as "lastMessageSenderId",
                        PC.created_at                       as "pinnedAt",
                        CM.name                             as "menuName",
                        CSM.name                            as "subMenuName",
@@ -231,6 +232,7 @@ class ChatService {
                                'lastMessageCreatedAt', M.created_at,
                                'lastMessageType', M.message_type,
                                'lastMessageStatus', M.status,
+                               'lastMessageSenderId', M.sender_id,
                                'menuName', CM.name,
                                'subMenuName', CSM.name,
                                'unreadCount', (SELECT COUNT(*)

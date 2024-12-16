@@ -3,7 +3,8 @@ const MessageType = {
     IMAGE: 'image',
     DOCUMENT: 'document',
     LINK: 'link',
-    MODULE: 'module'
+    MODULE: 'module',
+    VIDEO: 'video',
 }
 
 module.exports = MessageType;
