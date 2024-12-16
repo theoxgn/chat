@@ -30,6 +30,7 @@ const menuRouter = require('../route/menu.route');
 // * Import services
 const MessageServices = require('../service/message.service');
 const RoomServices = require('../service/room.service');
+const SocketService = require('../service/socket.service');
 
 app.use(cors());
 app.use(express.json());
@@ -102,34 +103,7 @@ io.on('connection', (socket) => {
         console.log(message, " <-- message created on server");
         io.to(roomId).emit('receive_message', message);
 
-        // Dapatkan recipient userId dari database berdasarkan roomId
-        const room = await RoomServices.getRoomById(roomId);
-        // recipientId adalah userId yang bukan sender
-        const recipientId = userId === room.initiator ? room.recipient : room.initiator;
-        // subMenuId adalah subMenu yang sama dengan room
-        const subMenuId = room.subMenuId;
-
-        // Emit update_chat_list hanya ke sender dan recipient dengan subMenu yang sama
-        const senderSocketId = onlineUsers.get(userId);
-        const recipientSocketId = onlineUsers.get(recipientId);
-
-        if (senderSocketId) {
-            io.to(senderSocketId).emit('update_chat_list', {
-                roomId,
-                userId,
-                subMenuId,
-                lastMessage: message
-            });
-        }
-
-        if (recipientSocketId) {
-            io.to(recipientSocketId).emit('update_chat_list', {
-                roomId,
-                userId,
-                subMenuId,
-                lastMessage: message
-            });
-        }
+        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
     });
 
     // !Handle message read
@@ -146,6 +120,7 @@ io.on('connection', (socket) => {
         });
 
         console.log(updated, " <-- message read on server");
+        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
     });
 
     // !Handle message update
@@ -154,6 +129,8 @@ io.on('connection', (socket) => {
         console.log(data, " <-- received on server");
         const updatedMessage = await MessageServices.editMessage(messageId, content);
         io.to(roomId).emit('message_updated', updatedMessage);
+
+        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
     });
 
     // !Handle message delete
@@ -162,6 +139,8 @@ io.on('connection', (socket) => {
         console.log(data, " <-- received on server");
         const deletedMessage = await MessageServices.deleteMessage(messageId);
         io.to(roomId).emit('message_deleted', deletedMessage);
+
+        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
     });
 
     // !Handle message reply
@@ -170,14 +149,19 @@ io.on('connection', (socket) => {
         console.log(data, " <-- received on server");
         const replyMessage = await MessageServices.replyMessage(roomId, userId, content, replyTo);
         io.to(roomId).emit('message_replied', replyMessage);
+
+        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
     });
 
     // !Handle message forward
     socket.on('forward_message', async (data) => {
         const {targetRoomId, userId, messageId} = data;
+        data.roomId = targetRoomId;
         console.log(data, " <-- received on server");
         const forwardMessage = await MessageServices.forwardMessage(messageId, targetRoomId, userId);
         io.to(targetRoomId).emit('receive_message', forwardMessage);
+
+        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
     });
 
     // !Handle disconnect
