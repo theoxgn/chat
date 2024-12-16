@@ -133,7 +133,10 @@ class ChatService {
         const chats = await db.sequelize.query(
             `
                 select cr.id                               as "id",
-                       M.content                           as "lastMessageContent",
+                       CASE
+                           WHEN M.deleted_at IS NOT NULL THEN 'This message was deleted'
+                           ELSE M.content
+                           END                             as "lastMessageContent",
                        M.created_at                        as "lastMessageCreatedAt",
                        M.message_type                      as "lastMessageType",
                        M.status                            as "lastMessageStatus",
@@ -220,7 +223,11 @@ class ChatService {
                 select cr.id         as id,
                        PC.created_at as "pinnedAt",
                        json_build_object(
-                               'lastMessageContent', M.content,
+                               'lastMessageContent',
+                               CASE
+                                   WHEN M.deleted_at IS NOT NULL THEN 'This message was deleted'
+                                   ELSE M.content
+                                   END,
                                'lastMessageCreatedAt', M.created_at,
                                'lastMessageType', M.message_type,
                                'lastMessageStatus', M.status,
@@ -276,6 +283,7 @@ class ChatService {
                     M.content,
                     M.message_type,
                     M.status,
+                    M.deleted_at,
                     CM.name,
                     CSM.name
                 order by PC.created_at desc nulls last,
