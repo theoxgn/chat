@@ -6,7 +6,11 @@ const MessageType = require("../enums/message.type");
 const MessageInformationType = require("../enums/message.information.type");
 
 class MessageService {
-    async getMessagesByRoomId(roomId) {
+    async getMessagesByRoomId(roomId, page = 1, size = 10) {
+        // * Calculate offset and limit for pagination
+        const offset = (page - 1) * size;
+        const limit = size;
+
         // * Find messages by room ID
         const messages = await Message.findAll({
             where: {
@@ -26,6 +30,8 @@ class MessageService {
                 }
             ],
             order: [['created_at', 'ASC']],
+            offset: offset,
+            limit: limit,
             paranoid: false
         });
 

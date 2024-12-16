@@ -7,7 +7,8 @@ class MessageController {
     async getMessagesByRoomId(req, res, next) {
         try {
             const {roomId} = req.params;
-            const result = await MessageService.getMessagesByRoomId(roomId);
+            const {page, size} = req.query;
+            const result = await MessageService.getMessagesByRoomId(roomId, page, size);
             return await SuccessResponse.toJSON(req, res, 200, 'Messages retrieved successfully', result);
         } catch (error) {
             next(error);
