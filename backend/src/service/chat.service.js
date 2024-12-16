@@ -2,7 +2,7 @@ const typingUsers = require("../store/typingUsers.store")
 const {PinnedChat, User, ChatRoom, Message} = require("../../models");
 const ChatRole = require("../enums/chat.role");
 const db = require("../../models");
-const {QueryTypes} = require("sequelize");
+const {QueryTypes, Op} = require("sequelize");
 const MenuService = require("./menu.service");
 
 class ChatService {
@@ -294,6 +294,99 @@ class ChatService {
                 type: QueryTypes.SELECT
             })
         return chats
+    }
+
+    async searchChatsByMessage(searchTerm, viewAs, subMenuId, currentUserId) {
+        // * Get opposite role
+        const opponentRole = await MenuService.getOppositeRole(viewAs);
+
+        // * Filter
+        const filter = {}
+        if (searchTerm) {
+            filter.content = {
+                [Op.iLike]: `%${searchTerm}%`
+            }
+        }
+
+        const chatRooms = await ChatRoom.findAll({
+            where: {
+                subMenuId: subMenuId,
+                [Op.or]: [
+                    {
+                        // Current user is recipient
+                        initiatorRole: opponentRole,
+                        recipientRole: viewAs,
+                        recipient: currentUserId
+                    },
+                    {
+                        // Current user is initiator
+                        initiatorRole: viewAs,
+                        recipientRole: opponentRole,
+                        initiator: currentUserId
+                    }
+                ]
+            },
+            include: [
+                {
+                    model: Message,
+                    as: 'messages',
+                    where: filter,
+                    required: true,
+                    attributes: ['content', 'createdAt', 'status']
+                },
+                {
+                    model: User,
+                    as: 'initiatorUser',
+                    attributes: ['id', 'companyName', 'username']
+                },
+                {
+                    model: User,
+                    as: 'recipientUser',
+                    attributes: ['id', 'companyName', 'username']
+                }
+            ],
+            attributes: ['id'],
+            order: [[{model: Message, as: 'messages'}, 'createdAt', 'DESC']]
+        });
+
+        // Format the response
+        return Promise.all(chatRooms.map(async chat => {
+            // Get last message
+            const lastMessage = await Message.findOne({
+                where: {chatRoomId: chat.id},
+                order: [['createdAt', 'DESC']],
+                attributes: ['content', 'createdAt', 'status'],
+                raw: true
+            });
+
+            // Count unread messages (status is 'sent' or 'delivered')
+            const unreadCount = await Message.count({
+                where: {
+                    chatRoomId: chat.id,
+                    status: {
+                        [Op.in]: ['sent', 'delivered']
+                    },
+                    senderId: {
+                        [Op.ne]: currentUserId  // Only count messages not sent by current user
+                    }
+                }
+            });
+
+            // Determine which name to display based on role
+            const opponentUser = chat.initiatorRole === opponentRole ? chat.initiatorUser : chat.recipientUser;
+            const displayName = opponentRole === ChatRole.BUYER ?
+                opponentUser.username :
+                opponentUser.companyName;
+
+            return {
+                id: chat.id,
+                name: displayName,
+                lastMessageContent: lastMessage?.content || '',
+                lastMessageCreatedAt: lastMessage?.createdAt || null,
+                lastMessageStatus: lastMessage?.status || null,
+                unreadMessages: unreadCount
+            };
+        }));
     }
 }
 

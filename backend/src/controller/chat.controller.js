@@ -91,7 +91,7 @@ class ChatController {
         try {
             const {searchTerm, viewAs, subMenuId, currentUserId} = req.query;
             const usersResult = await UserService.getAllConnectedUsers(searchTerm, viewAs, subMenuId, currentUserId);
-            const chatsResult = []
+            const chatsResult = await ChatService.searchChatsByMessage(searchTerm, viewAs, subMenuId, currentUserId);
             return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', {
                 users: usersResult,
                 chats: chatsResult
