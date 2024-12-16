@@ -154,10 +154,12 @@ io.on('connection', (socket) => {
 
     // !Handle message reply
     socket.on('reply_message', async (data) => {
-        const {roomId, userId, content, replyTo} = data;
+        const {roomId, userId, content, replyTo, tempId} = data;
         console.log(data, " <-- received on server");
         const replyMessage = await MessageServices.replyMessage(roomId, userId, content, replyTo);
-        io.to(roomId).emit('message_replied', replyMessage);
+        const messageJson = JSON.parse(JSON.stringify(replyMessage));
+        messageJson.tempId = tempId;
+        io.to(roomId).emit('message_replied', messageJson);
 
         await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
     });
