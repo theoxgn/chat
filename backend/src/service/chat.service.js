@@ -3,6 +3,7 @@ const {PinnedChat, User, ChatRoom, Message} = require("../../models");
 const ChatRole = require("../enums/chat.role");
 const db = require("../../models");
 const {QueryTypes} = require("sequelize");
+const MenuService = require("./menu.service");
 
 class ChatService {
     // * Already implement socket.io (see in app.js)
@@ -117,25 +118,8 @@ class ChatService {
         let oppositeRole = null;
 
         // * Determine oposite role
-        switch (viewAs) {
-            // ? If view as buyer, show the sellers
-            case ChatRole.BUYER:
-                oppositeRole = ChatRole.SELLER;
-                break;
-            // ? If view as seller, show the buyers
-            case ChatRole.SELLER:
-                oppositeRole = ChatRole.BUYER;
-                break;
-            // ? If view as shipper, show the transporters
-            case ChatRole.SHIPPER:
-                oppositeRole = ChatRole.TRANSPORTER;
-                break;
-            // ? If view as transporter, show the shippers
-            case ChatRole.TRANSPORTER:
-                oppositeRole = ChatRole.SHIPPER;
-                break;
+        oppositeRole = await MenuService.getOppositeRole(viewAs);
 
-        }
         console.log(isAll)
         console.log(typeof (isAll));
 
@@ -219,25 +203,8 @@ class ChatService {
         let oppositeRole = null;
 
         // * Determine oposite role
-        switch (viewAs) {
-            // ? If view as buyer, show the sellers
-            case ChatRole.BUYER:
-                oppositeRole = ChatRole.SELLER;
-                break;
-            // ? If view as seller, show the buyers
-            case ChatRole.SELLER:
-                oppositeRole = ChatRole.BUYER;
-                break;
-            // ? If view as shipper, show the transporters
-            case ChatRole.SHIPPER:
-                oppositeRole = ChatRole.TRANSPORTER;
-                break;
-            // ? If view as transporter, show the shippers
-            case ChatRole.TRANSPORTER:
-                oppositeRole = ChatRole.SHIPPER;
-                break;
+        oppositeRole = await MenuService.getOppositeRole(viewAs);
 
-        }
         console.log(isAll)
         console.log(typeof (isAll));
 
