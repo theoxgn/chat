@@ -110,10 +110,10 @@ class ChatService {
         });
     }
 
-    async getAllChatsViewCategory(userId, viewAs, subMenuId, isAll, page, size) {
+    async getAllChatsViewCategory(userId, viewAs, subMenuId, isAll, page = 1, size = 10) {
         // * Define pagination
         let filter = ' and 1=1';
-        const offset = page * size;
+        const offset = (page - 1) * size;
         const limit = size;
         let oppositeRole = null;
 
@@ -198,10 +198,10 @@ class ChatService {
         return chats
     }
 
-    async getAllChatsViewUser(userId, viewAs, subMenuId, isAll, page, size) {
+    async getAllChatsViewUser(userId, viewAs, subMenuId, isAll, page = 1, size = 10) {
         // * Define pagination
         let filter = ' and 1=1';
-        const offset = page * size;
+        const offset = (page - 1) * size;
         const limit = size;
         let oppositeRole = null;
 
