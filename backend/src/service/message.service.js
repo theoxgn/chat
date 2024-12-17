@@ -43,6 +43,7 @@ class MessageService {
         return messages.map(message => {
             if (message.deletedAt) {
                 message.content = 'This message was deleted';
+                message.setDataValue('files', []);
             }
             if (message.replyMessage) {
                 if (message.replyMessage.deletedAt) {
