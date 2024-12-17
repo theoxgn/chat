@@ -124,7 +124,7 @@ class ChatService {
         console.log(typeof (isAll));
 
         if (isAll === 'false' || isAll === false) {
-            filter = 'and M.status = \'delivered\''
+            filter = 'and COALESCE(UC.unread_count, 0) > 0'
         }
 
         // * Find chat (represent chatroom) by userId
@@ -132,32 +132,34 @@ class ChatService {
         // * Opposite is role of other user in chatroom
         const chats = await db.sequelize.query(
             `
-                select cr.id                               as "id",
+                WITH UnreadCounts AS (SELECT chat_room_id,
+                                             COUNT(*) as unread_count
+                                      FROM public."Messages" unread
+                                      WHERE (unread.status = 'delivered' or unread.status = 'sent')
+                                        AND unread.sender_id != :userId
+                                      GROUP BY chat_room_id)
+                select cr.id                        as "id",
                        CASE
                            WHEN M.deleted_at IS NOT NULL THEN 'This message was deleted'
                            ELSE M.content
-                           END                             as "lastMessageContent",
-                       M.created_at                        as "lastMessageCreatedAt",
-                       M.message_type                      as "lastMessageType",
-                       M.status                            as "lastMessageStatus",
-                       M.sender_id                         as "lastMessageSenderId",
-                       PC.created_at                       as "pinnedAt",
-                       CM.name                             as "menuName",
-                       CSM.name                            as "subMenuName",
-                       (SELECT COUNT(*)
-                        FROM public."Messages" unread
-                        WHERE unread.chat_room_id = cr.id
-                          AND (unread.status = 'delivered' or unread.status = 'sent')
-                          AND unread.sender_id != :userId) as "unreadCount",
+                           END                      as "lastMessageContent",
+                       M.created_at                 as "lastMessageCreatedAt",
+                       M.message_type               as "lastMessageType",
+                       M.status                     as "lastMessageStatus",
+                       M.sender_id                  as "lastMessageSenderId",
+                       PC.created_at                as "pinnedAt",
+                       CM.name                      as "menuName",
+                       CSM.name                     as "subMenuName",
+                       COALESCE(UC.unread_count, 0) as "unreadCount",
                        CASE
                            WHEN initiator.id = :userId AND :viewAs = 'buyer' THEN recipient.company_name
                            WHEN initiator.id = :userId AND :viewAs != 'buyer' THEN recipient.username
                            ELSE initiator.username
-                           END                             as "opponentName",
+                           END                      as "opponentName",
                        CASE
                            WHEN initiator.id = :userId THEN recipient.id
                            ELSE initiator.id
-                           END                             as "opponentId"
+                           END                      as "opponentId"
                 from "ChatRooms" cr
                          left join public."Users" initiator on cr.initiator = initiator.id
                          left join public."Users" recipient on cr.recipient = recipient.id
@@ -167,6 +169,7 @@ class ChatService {
                          left join public."PinnedChat" PC on cr.id = PC.chat_room_id
                          left join public."ChatSubMenus" CSM on cr.sub_menu_id = CSM.id
                          left join public."ChatMenus" CM on CSM.menu_id = CM.id
+                         left join UnreadCounts UC on cr.id = UC.chat_room_id
                 where ((
                            cr.initiator = :userId and
                            cr.initiator_role = :viewAs and
@@ -213,7 +216,7 @@ class ChatService {
         console.log(typeof (isAll));
 
         if (isAll === 'false' || isAll === false) {
-            filter = 'and M.status = \'delivered\''
+            filter = 'and unread_count > 0';
         }
 
         // * Find chat (represent chatroom) by userId
@@ -221,6 +224,12 @@ class ChatService {
         // * Opposite is role of other user in chatroom
         const chats = await db.sequelize.query(
             `
+                WITH UnreadCounts AS (SELECT chat_room_id,
+                                             COUNT(*) as unread_count
+                                      FROM public."Messages" unread
+                                      WHERE (unread.status = 'delivered' or unread.status = 'sent')
+                                        AND unread.sender_id != :userId
+                                      GROUP BY chat_room_id)
                 select cr.id         as id,
                        PC.created_at as "pinnedAt",
                        json_build_object(
@@ -235,11 +244,7 @@ class ChatService {
                                'lastMessageSenderId', M.sender_id,
                                'menuName', CM.name,
                                'subMenuName', CSM.name,
-                               'unreadCount', (SELECT COUNT(*)
-                                               FROM public."Messages" unread
-                                               WHERE unread.chat_room_id = cr.id
-                                                 AND (unread.status = 'delivered' or unread.status = 'sent')
-                                                 AND unread.sender_id != :userId)
+                               'unreadCount', COALESCE(UC.unread_count, 0)
                        )             as chats,
                        CASE
                            WHEN initiator.id = :userId AND :viewAs = 'buyer' THEN recipient.company_name
@@ -259,6 +264,7 @@ class ChatService {
                          left join public."PinnedChat" PC on cr.id = PC.chat_room_id
                          left join public."ChatSubMenus" CSM on cr.sub_menu_id = CSM.id
                          left join public."ChatMenus" CM on CSM.menu_id = CM.id
+                         left join UnreadCounts UC on cr.id = UC.chat_room_id
                 where ((
                            cr.initiator = :userId and
                            cr.initiator_role = :viewAs and
@@ -286,8 +292,10 @@ class ChatService {
                     M.message_type,
                     M.status,
                     M.deleted_at,
+                    M.sender_id,
                     CM.name,
-                    CSM.name
+                    CSM.name,
+                    UC.unread_count
                 order by PC.created_at desc nulls last,
                     M.created_at desc nulls last
                 limit :limit offset :offset
