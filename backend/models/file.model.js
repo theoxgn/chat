@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         fileType: {
-            type: DataTypes.ENUM('image', 'video', 'document', 'file'),
+            type: DataTypes.STRING,
             allowNull: false
         },
         extension: {

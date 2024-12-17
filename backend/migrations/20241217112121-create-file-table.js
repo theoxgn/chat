@@ -33,7 +33,7 @@ module.exports = {
                 allowNull: false
             },
             file_type: {
-                type: Sequelize.ENUM('image', 'video', 'document', 'file'),
+                type: Sequelize.STRING,
                 allowNull: false
             },
             extension: {
