@@ -105,9 +105,9 @@ io.on('connection', (socket) => {
 
     // !Handle user sending message
     socket.on('send_message', async (data) => {
-        const {roomId, userId, content, tempId, file} = data;
+        const {roomId, userId, content, tempId, files} = data;
         console.log(data, " <-- received on server");
-        const message = await MessageServices.createMessage(roomId, userId, content, file.fileUrl, file.originalName, file.fileType, file.fileName, file.fileExtension);
+        const message = await MessageServices.createMessage(roomId, userId, content, files);
         console.log(message, " <-- message created on server");
         const messageJson = JSON.parse(JSON.stringify(message));
         messageJson.tempId = tempId;

@@ -53,7 +53,7 @@ class MessageService {
         });
     }
 
-    async createMessage(roomId, userId, content, fileUrl, originalName, fileType, fileName, fileExtension) {
+    async createMessage(roomId, userId, content, files) {
         // * Validate user and room
         const user = await User.findByPk(userId);
         if (!user) {
@@ -87,16 +87,18 @@ class MessageService {
         });
 
         // * Create file in database
-        if (fileUrl) {
-            await File.create({
-                messageId: message.id,
-                originalName: originalName,
-                name: fileName,
-                thumbnailFileUrl: fileUrl,
-                fileUrl: fileUrl,
-                fileType: fileType,
-                extension: fileExtension, // Remove the dot
-            });
+        if (files) {
+            if (files.length > 0) {
+                await File.create({
+                    messageId: message.id,
+                    originalName: files[0].fileOriginalName,
+                    name: files[0].fileName,
+                    thumbnailFileUrl: files[0].fileUrl,
+                    fileUrl: files[0].fileUrl,
+                    fileType: files[0].fileType,
+                    extension: files[0].fileExtension, // Remove the dot
+                });
+            }
         }
 
         return await Message.findByPk(message.id, {
