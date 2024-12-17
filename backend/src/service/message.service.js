@@ -75,6 +75,10 @@ class MessageService {
                     {
                         model: User,
                         as: 'recipientUser'
+                    },
+                    {
+                        model: User,
+                        as: 'initiatorUser'
                     }
                 ]
             }
@@ -105,7 +109,7 @@ class MessageService {
             messageType: messageType,
             status: MessageStatus.DELIVERED,
             originalInitiatorName: user.username,
-            originalRecipientName: room.recipientUser.username
+            originalRecipientName: room.recipientUser.id === userId ? room.initiatorUser.username : room.recipientUser.username
         });
 
         // * Create file in database
@@ -167,6 +171,10 @@ class MessageService {
                     {
                         model: User,
                         as: 'recipientUser'
+                    },
+                    {
+                        model: User,
+                        as: 'initiatorUser'
                     }
                 ]
             }
@@ -191,7 +199,7 @@ class MessageService {
             status: MessageStatus.DELIVERED,
             replyTo: replyTo,
             originalInitiatorName: user.username,
-            originalRecipientName: room.recipientUser.username
+            originalRecipientName: room.recipientUser.id === userId ? room.initiatorUser.username : room.recipientUser.username
         });
 
         // Then fetch with the association
@@ -277,6 +285,31 @@ class MessageService {
     }
 
     async forwardMessage(messageId, targetRoomId, userId) {
+        // * Validate user and room
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        const room = await ChatRoom.findByPk(
+            targetRoomId,
+            {
+                include: [
+                    {
+                        model: User,
+                        as: 'recipientUser'
+                    },
+                    {
+                        model: User,
+                        as: 'initiatorUser'
+                    }
+                ]
+            }
+        );
+        if (!room) {
+            throw new Error('Target room not found');
+        }
+
         // * Find original message
         const originalMessage = await Message.findByPk(messageId, {
             include: [
@@ -312,7 +345,9 @@ class MessageService {
             messageType: messageType,
             status: MessageStatus.DELIVERED,
             isForwarded: true,
-            originalMessageId: messageId
+            originalMessageId: messageId,
+            originalInitiatorName: user.username,
+            originalRecipientName: room.recipientUser.id === userId ? room.initiatorUser.username : room.recipientUser.username
         });
 
         // * Create file in database
