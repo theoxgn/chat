@@ -1,5 +1,5 @@
 const pool = require("../config/postgres");
-const {Message, User, ChatRoom} = require("../../models");
+const {Message, User, ChatRoom, File} = require("../../models");
 const {Op, fn, col} = require("sequelize");
 const MessageStatus = require("../enums/message.status");
 const MessageType = require("../enums/message.type");
@@ -27,6 +27,11 @@ class MessageService {
                     as: 'replyMessage',
                     attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName', "deletedAt"],
                     paranoid: false
+                },
+                {
+                    model: File,
+                    as: 'files',
+                    attributes: ['id', 'originalName', 'name', 'thumbnailFileUrl', 'fileUrl', 'fileType', 'extension']
                 }
             ],
             order: [['created_at', 'ASC']],
@@ -48,7 +53,7 @@ class MessageService {
         });
     }
 
-    async createMessage(roomId, userId, content) {
+    async createMessage(roomId, userId, content, fileUrl, originalName, fileType, fileName, fileExtension) {
         // * Validate user and room
         const user = await User.findByPk(userId);
         if (!user) {
@@ -71,7 +76,7 @@ class MessageService {
         }
 
         // * Create message in database
-        return await Message.create({
+        const message = await Message.create({
             chatRoomId: roomId,
             senderId: userId,
             content: content,
@@ -80,6 +85,29 @@ class MessageService {
             originalInitiatorName: user.username,
             originalRecipientName: room.recipientUser.username
         });
+
+        // * Create file in database
+        if (fileUrl) {
+            await File.create({
+                messageId: message.id,
+                originalName: originalName,
+                name: fileName,
+                thumbnailFileUrl: fileUrl,
+                fileUrl: fileUrl,
+                fileType: fileType,
+                extension: fileExtension, // Remove the dot
+            });
+        }
+
+        return await Message.findByPk(message.id, {
+            include: [
+                {
+                    model: File,
+                    as: 'files',
+                    attributes: ['id', 'originalName', 'name', 'thumbnailFileUrl', 'fileUrl', 'fileType', 'extension']
+                }
+            ]
+        })
     }
 
     async readMessage(roomId, userId, messageIds) {
