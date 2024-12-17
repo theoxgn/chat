@@ -38,18 +38,23 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 6. reply, forward in opponent chat -> OK
 7. fixing online offline status
 8. media
-    - image
-    - video
-    - document (pdf, doc)
+    - image -> ok
+    - video -> ok
+    - document (pdf, doc) -> ok
+    - xlsx
     - other file
     - module
 9. Searching message & users -> OK backend
     - If user or message found then insert to chatRoom (open chatRoom)
 10. Chat list pagination -> OK backend
 11. Chat room pagination -> OK backend
-12. Chat list filter -> OK backend
+12. Chat list filter -> OK
 13. View as category -> Ok backend
-14. Pin chat -> OK backend
+14. Pin chat -> OK
 15. reconnect / rejoin room
 16. status jam pasir -> OK
 17. status icon -> OK
+18. today, yesterday, date, so on
+19. can reply & forward opponent message
+20. if replying message, then delete the replied message, the replied message will be deleted too -> OK
+21. check initiatorName and recipientName in forwarded message -> OK
