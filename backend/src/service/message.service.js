@@ -273,9 +273,19 @@ class MessageService {
         }
 
         // * Update message
-        return await message.update({
+        await message.update({
             content,
             isUpdated: true
+        });
+
+        return await Message.findByPk(messageId, {
+            include: [
+                {
+                    model: File,
+                    as: 'files',
+                    attributes: ['id', 'originalName', 'name', 'thumbnailFileUrl', 'fileUrl', 'fileType', 'extension']
+                }
+            ]
         });
     }
 
