@@ -248,13 +248,22 @@ class MessageService {
 
     async forwardMessage(messageId, targetRoomId, userId) {
         // * Find original message
-        const originalMessage = await Message.findByPk(messageId);
+        const originalMessage = await Message.findByPk(messageId, {
+            include: [
+                {
+                    model: File,
+                    as: 'files',
+                    attributes: ['id', 'originalName', 'name', 'thumbnailFileUrl', 'fileUrl', 'fileType', 'extension']
+                }
+            ]
+        });
+
         if (!originalMessage) {
             throw new Error('Original message not found');
         }
 
         // * Create forwarded message
-        return await Message.create({
+        const message = await Message.create({
             chatRoomId: targetRoomId,
             senderId: userId,
             content: originalMessage.content,
@@ -262,6 +271,31 @@ class MessageService {
             status: MessageStatus.DELIVERED,
             isForwarded: true,
             originalMessageId: messageId
+        });
+
+        // * Create file in database
+        if (originalMessage.files) {
+            if (originalMessage.files.length > 0) {
+                await File.create({
+                    messageId: message.id,
+                    originalName: originalMessage.files[0].originalName,
+                    name: originalMessage.files[0].name,
+                    thumbnailFileUrl: originalMessage.files[0].thumbnailFileUrl,
+                    fileUrl: originalMessage.files[0].fileUrl,
+                    fileType: originalMessage.files[0].fileType,
+                    extension: originalMessage.files[0].extension
+                });
+            }
+        }
+
+        return await Message.findByPk(message.id, {
+            include: [
+                {
+                    model: File,
+                    as: 'files',
+                    attributes: ['id', 'originalName', 'name', 'thumbnailFileUrl', 'fileUrl', 'fileType', 'extension']
+                }
+            ]
         });
     }
 
