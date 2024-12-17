@@ -1,18 +1,17 @@
 // * Import Service
 const FileService = require('../service/file.service');
-const ErrorResponse = require("../response/error.response");
+const SuccessResponse = require("../response/success.response");
 
 class FileController {
     async uploadFile(req, res, next) {
         try {
-            // if (!req.file) {
-            //     throw new ErrorResponse(400, "Bad Request", "File is required");
-            // }
+            if (!req.file) {
+                return res.status(400).json({error: 'No file uploaded'});
+            }
 
-            // const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-            const result = await FileService.uploadFile("fileUrl", "req.file");
+            const result = await FileService.uploadFile(req.file);
 
-            res.json(result);
+            return await SuccessResponse.toJSON(req, res, 200, 'File uploaded successfully', result);
         } catch (error) {
             next(error);
         }

@@ -1,62 +1,77 @@
-// Configure multer for file upload
-const multer = require("multer");
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/')
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const fileFilter = (req, file, cb) => {
-    // Add any file type restrictions here
-    const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'video/mp4',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
-
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Invalid file type'), false);
-    }
-};
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB
-    },
-    fileFilter: fileFilter
-});
-
+require("dotenv").config();
+const {PutObjectCommand} = require('@aws-sdk/client-s3');
+const s3Client = require('../service/s3Client.service');
+const {v4: uuidv4} = require('uuid');
+const path = require('path');
 
 class FileService {
-    constructor() {
-        this.upload = upload;
+    async uploadFile(file) {
+        try {
+            const fileExtension = path.extname(file.originalname);
+            const fileName = `${uuidv4()}${fileExtension}`;
+            const fileType = this._determineFileType(file.mimetype);
+
+            // Upload to S3
+            const uploadResult = await this._uploadToS3(file, fileName);
+
+            // Create thumbnail for images
+            let thumbnailUrl = null;
+            if (fileType === 'image') {
+                thumbnailUrl = await this._generateThumbnail(file, fileName);
+            }
+
+            // Save file record in database
+            return {
+                originalName: file.originalname,
+                name: fileName,
+                thumbnailFileUrl: thumbnailUrl,
+                fileUrl: uploadResult.Location,
+                fileType,
+                extension: fileExtension.substring(1), // Remove the dot
+            };
+
+        } catch (error) {
+            console.error('Error in file upload:', error);
+            throw error;
+        }
     }
 
-    async uploadFile(fileUrl, file) {
-        // return {
-        //     success: true,
-        //     fileUrl: fileUrl,
-        //     fileName: file.originalname,
-        //     fileType: file.mimetype,
-        //     fileSize: file.size
-        // }
-        return {
-            success: true,
-            url: "https://example.com/api.jpg"
+    async _uploadToS3(file, fileName) {
+        const params = {
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: `uploads/${fileName}`,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+            ACL: 'public-read'
+        };
+
+        try {
+            await s3Client.send(new PutObjectCommand(params));
+            return {
+                Location: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/uploads/${fileName}`
+            };
+        } catch (error) {
+            console.error('S3 upload error:', error);
+            throw new Error('Failed to upload file to S3');
         }
+    }
+
+    _determineFileType(mimetype) {
+        const imageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        const videoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime'];
+        const documentTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
+        if (imageTypes.includes(mimetype)) return 'image';
+        if (videoTypes.includes(mimetype)) return 'video';
+        if (documentTypes.includes(mimetype)) return 'document';
+        return 'file';
+    }
+
+    async _generateThumbnail(file, originalFileName) {
+        // Implementation for thumbnail generation
+        // This would typically use sharp or another image processing library
+        // For brevity, this is left as an exercise
+        return null;
     }
 }
 
