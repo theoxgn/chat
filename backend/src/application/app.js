@@ -148,6 +148,7 @@ io.on('connection', (socket) => {
         const {roomId, messageId} = data;
         console.log(data, " <-- received on server");
         const deletedMessage = await MessageServices.deleteMessage(messageId);
+        deletedMessage.setDataValue('files', []);
         io.to(roomId).emit('message_deleted', deletedMessage);
 
         await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
