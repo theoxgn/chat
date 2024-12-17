@@ -77,11 +77,24 @@ class MessageService {
         }
 
         // * Create message in database
+        let messageType = MessageType.TEXT;
+        if (files) {
+            if (files.length > 0) {
+                if (files[0].fileType.includes('image')) {
+                    messageType = MessageType.IMAGE
+                } else if (files[0].fileType.includes('video')) {
+                    messageType = MessageType.VIDEO
+                } else if (files[0].fileType.includes('pdf') || files[0].fileType.includes('vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+                    messageType = MessageType.DOCUMENT
+                }
+
+            }
+        }
         const message = await Message.create({
             chatRoomId: roomId,
             senderId: userId,
             content: content,
-            messageType: MessageType.TEXT,
+            messageType: messageType,
             status: MessageStatus.DELIVERED,
             originalInitiatorName: user.username,
             originalRecipientName: room.recipientUser.username
@@ -263,11 +276,23 @@ class MessageService {
         }
 
         // * Create forwarded message
+        let messageType = MessageType.TEXT;
+        if (originalMessage.files) {
+            if (originalMessage.files.length > 0) {
+                if (originalMessage.files[0].fileType.includes('image')) {
+                    messageType = MessageType.IMAGE
+                } else if (originalMessage.files[0].fileType.includes('video')) {
+                    messageType = MessageType.VIDEO
+                } else if (originalMessage.files[0].fileType.includes('pdf') || originalMessage.files[0].fileType.includes('vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+                    messageType = MessageType.DOCUMENT
+                }
+            }
+        }
         const message = await Message.create({
             chatRoomId: targetRoomId,
             senderId: userId,
             content: originalMessage.content,
-            messageType: 'text',
+            messageType: messageType,
             status: MessageStatus.DELIVERED,
             isForwarded: true,
             originalMessageId: messageId
