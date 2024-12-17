@@ -141,6 +141,7 @@ class ChatService {
                 select cr.id                        as "id",
                        CASE
                            WHEN M.deleted_at IS NOT NULL THEN 'This message was deleted'
+                           WHEN M.content IS NULL OR M.content = '' THEN COALESCE(F.original_name, '')
                            ELSE M.content
                            END                      as "lastMessageContent",
                        M.created_at                 as "lastMessageCreatedAt",
@@ -166,6 +167,7 @@ class ChatService {
                          left join (select distinct on (chat_room_id) *
                                     from public."Messages"
                                     order by chat_room_id, created_at desc) M on cr.id = M.chat_room_id
+                         left join public."Files" F on M.id = F.message_id
                          left join public."PinnedChat" PC on cr.id = PC.chat_room_id
                          left join public."ChatSubMenus" CSM on cr.sub_menu_id = CSM.id
                          left join public."ChatMenus" CM on CSM.menu_id = CM.id
