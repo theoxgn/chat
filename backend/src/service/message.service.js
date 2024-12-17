@@ -55,6 +55,7 @@ class MessageService {
             if (message.replyMessage) {
                 if (message.replyMessage.deletedAt) {
                     message.replyMessage.content = 'This message was deleted';
+                    message.replyMessage.setDataValue('files', []);
                 }
             }
             return message;
