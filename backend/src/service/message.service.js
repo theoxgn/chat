@@ -26,7 +26,14 @@ class MessageService {
                     model: Message,
                     as: 'replyMessage',
                     attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName', "deletedAt"],
-                    paranoid: false
+                    paranoid: false,
+                    include: [
+                        {
+                            model: File,
+                            as: 'files',
+                            attributes: ['id', 'originalName', 'name', 'thumbnailFileUrl', 'fileUrl', 'fileType', 'extension'],
+                        }
+                    ]
                 },
                 {
                     model: File,
@@ -188,12 +195,21 @@ class MessageService {
 
         // Then fetch with the association
         const messageWithReply = await Message.findByPk(message.id, {
-            include: [{
-                model: Message,
-                as: 'replyMessage',
-                attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName', "deletedAt"],
-                paranoid: false
-            }]
+            include: [
+                {
+                    model: Message,
+                    as: 'replyMessage',
+                    attributes: ['id', 'content', 'originalInitiatorName', 'originalRecipientName', "deletedAt"],
+                    paranoid: false,
+                    include: [
+                        {
+                            model: File,
+                            as: 'files',
+                            attributes: ['id', 'originalName', 'name', 'thumbnailFileUrl', 'fileUrl', 'fileType', 'extension'],
+                        }
+                    ]
+                },
+            ]
         });
 
         if (messageWithReply.deletedAt) {
