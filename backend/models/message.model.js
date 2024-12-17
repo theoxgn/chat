@@ -84,6 +84,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'replyTo',
             as: 'replyMessage'
         });
+        Message.hasMany(models.File, {
+            foreignKey: 'messageId',
+            as: 'files'
+        });
     };
 
     return Message;
