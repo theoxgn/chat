@@ -46,12 +46,16 @@ class FileService {
     }
 
     async uploadFile(fileUrl, file) {
+        // return {
+        //     success: true,
+        //     fileUrl: fileUrl,
+        //     fileName: file.originalname,
+        //     fileType: file.mimetype,
+        //     fileSize: file.size
+        // }
         return {
             success: true,
-            fileUrl: fileUrl,
-            fileName: file.originalname,
-            fileType: file.mimetype,
-            fileSize: file.size
+            url: "https://example.com/api.jpg"
         }
     }
 }

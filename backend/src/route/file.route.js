@@ -7,6 +7,6 @@ const FileController = require('../controller/file.controller');
 // * Import service
 const FileService = require('../service/file.service');
 
-fileRouter.post('/api/upload', FileService.upload.single('file'), FileController.uploadFile);
+fileRouter.post('/api/files/upload', FileController.uploadFile);
 
 module.exports = fileRouter;
