@@ -238,6 +238,7 @@ class ChatService {
                                'lastMessageContent',
                                CASE
                                    WHEN M.deleted_at IS NOT NULL THEN 'This message was deleted'
+                                   WHEN M.content IS NULL OR M.content = '' THEN COALESCE(F.original_name, '')
                                    ELSE M.content
                                    END,
                                'lastMessageCreatedAt', M.created_at,
@@ -263,6 +264,7 @@ class ChatService {
                          left join (select distinct on (chat_room_id) *
                                     from public."Messages"
                                     order by chat_room_id, created_at desc) M on cr.id = M.chat_room_id
+                         left join public."Files" F on M.id = F.message_id
                          left join public."PinnedChat" PC on cr.id = PC.chat_room_id
                          left join public."ChatSubMenus" CSM on cr.sub_menu_id = CSM.id
                          left join public."ChatMenus" CM on CSM.menu_id = CM.id
@@ -297,7 +299,8 @@ class ChatService {
                     M.sender_id,
                     CM.name,
                     CSM.name,
-                    UC.unread_count
+                    UC.unread_count,
+                    F.original_name
                 order by PC.created_at desc nulls last,
                     M.created_at desc nulls last
                 limit :limit offset :offset
