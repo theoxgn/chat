@@ -4,10 +4,11 @@ const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    const allowedDocTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime'];
+    const allowedDocTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel'];
+    const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/quicktime', 'video/mp4'];
+    const allowedArchiveTypes = ['application/zip', 'application/x-zip-compressed'];
 
-    const allowedMimeTypes = [...allowedImageTypes, ...allowedDocTypes, ...allowedVideoTypes];
+    const allowedMimeTypes = [...allowedImageTypes, ...allowedDocTypes, ...allowedVideoTypes, ...allowedArchiveTypes];
 
     if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true);

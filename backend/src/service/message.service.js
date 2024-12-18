@@ -94,9 +94,14 @@ class MessageService {
             if (files.length > 0) {
                 if (files[0].fileType.includes('image')) {
                     messageType = MessageType.IMAGE
-                } else if (files[0].fileType.includes('video')) {
+                } else if (files[0].fileType.includes('video') || files[0].fileType.includes('mov')) {
                     messageType = MessageType.VIDEO
-                } else if (files[0].fileType.includes('pdf') || files[0].fileType.includes('vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+                } else if (
+                    files[0].fileType.includes('pdf') ||
+                    files[0].fileType.includes('vnd.openxmlformats-officedocument.wordprocessingml.document') ||
+                    files[0].fileType.includes('vnd.ms-excel') ||
+                    files[0].fileType.includes('zip')
+                ) {
                     messageType = MessageType.DOCUMENT
                 }
             }
@@ -336,9 +341,14 @@ class MessageService {
             if (originalMessage.files.length > 0) {
                 if (originalMessage.files[0].fileType.includes('image')) {
                     messageType = MessageType.IMAGE
-                } else if (originalMessage.files[0].fileType.includes('video')) {
+                } else if (originalMessage.files[0].fileType.includes('video') || originalMessage.files[0].fileType.includes('mov')) {
                     messageType = MessageType.VIDEO
-                } else if (originalMessage.files[0].fileType.includes('pdf') || originalMessage.files[0].fileType.includes('vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+                } else if (
+                    originalMessage.files[0].fileType.includes('pdf') ||
+                    originalMessage.files[0].fileType.includes('vnd.openxmlformats-officedocument.wordprocessingml.document') ||
+                    originalMessage.files[0].fileType.includes('vnd.ms-excel') ||
+                    originalMessage.files[0].fileType.includes('zip')
+                ) {
                     messageType = MessageType.DOCUMENT
                 }
             }
