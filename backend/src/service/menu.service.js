@@ -51,7 +51,7 @@ class MenuService {
                                                                                                AND
                                                                                                 m.sender_id != :userId
                                                                                                AND
-                                                                                                (m.status = 'delivered' OR m.status = 'sent')
+                                                                                                m.status = 'delivered'
                                                                                                THEN 1
                                                                                            END
                                                                                ), 0)

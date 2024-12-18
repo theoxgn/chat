@@ -135,7 +135,7 @@ class ChatService {
                 WITH UnreadCounts AS (SELECT chat_room_id,
                                              COUNT(*) as unread_count
                                       FROM public."Messages" unread
-                                      WHERE (unread.status = 'delivered' or unread.status = 'sent')
+                                      WHERE unread.status = 'delivered'
                                         AND unread.sender_id != :userId
                                       GROUP BY chat_room_id)
                 select cr.id                        as "id",
@@ -229,7 +229,7 @@ class ChatService {
                 WITH UnreadCounts AS (SELECT chat_room_id,
                                              COUNT(*) as unread_count
                                       FROM public."Messages" unread
-                                      WHERE (unread.status = 'delivered' or unread.status = 'sent')
+                                      WHERE unread.status = 'delivered'
                                         AND unread.sender_id != :userId
                                       GROUP BY chat_room_id)
                 select cr.id         as id,
@@ -382,12 +382,12 @@ class ChatService {
                 raw: true
             });
 
-            // Count unread messages (status is 'sent' or 'delivered')
+            // Count unread messages (status is 'delivered')
             const unreadCount = await Message.count({
                 where: {
                     chatRoomId: chat.id,
                     status: {
-                        [Op.in]: ['sent', 'delivered']
+                        [Op.in]: ['delivered']
                     },
                     senderId: {
                         [Op.ne]: currentUserId  // Only count messages not sent by current user
