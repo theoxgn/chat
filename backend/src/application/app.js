@@ -1,8 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const {Server} = require('socket.io');
 const cors = require('cors');
-const pool = require('../config/postgres');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET
 
 const app = express();
 const server = http.createServer(app);
@@ -11,7 +13,8 @@ const io = new Server(server, {
         origin: "*",
         methods: ["GET", "POST"]
     },
-    connectionStateRecovery: {}
+    connectionStateRecovery: {},
+    transports: ['websocket', "polling"]
 });
 
 const {errorMiddleware} = require('../middleware/error.middleware');
@@ -44,7 +47,29 @@ app.use(adminRouter);
 app.use(fileRouter);
 app.use(menuRouter);
 
-// *Socket.IO connection handling
+// * Socket io middleware
+// io.use((socket, next) => {
+//     try {
+//         const token = socket.handshake.auth.token || socket.handshake.headers.authorization;
+//
+//         if (!token) {
+//             return next(new Error('Authentication token missing'));
+//         }
+//         console.log(token, " <-- token received on server");
+//         // Verify JWT token
+//         const decoded = jwt.verify(token, JWT_SECRET);
+//
+//         // Attach user data to socket
+//         socket.user = decoded;
+//         socket.user.socketId = socket.id;
+//
+//         next();
+//     } catch (error) {
+//         return next(new Error('Invalid authentication token'));
+//     }
+// });
+
+// * Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log('User connected to socketio:', socket.id);
 
