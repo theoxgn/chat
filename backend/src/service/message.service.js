@@ -99,9 +99,14 @@ class MessageService {
                 } else if (files[0].fileType.includes('pdf') || files[0].fileType.includes('vnd.openxmlformats-officedocument.wordprocessingml.document')) {
                     messageType = MessageType.DOCUMENT
                 }
-
             }
         }
+        if (content.includes('https://') || content.includes('http://')) {
+            messageType = MessageType.LINK
+        } else if (content.includes('muatmuat.com')) {
+            messageType = MessageType.MODULE
+        }
+
         const message = await Message.create({
             chatRoomId: roomId,
             senderId: userId,
@@ -338,6 +343,12 @@ class MessageService {
                 }
             }
         }
+        if (originalMessage.content.includes('https://') || originalMessage.content.includes('http://')) {
+            messageType = MessageType.LINK
+        } else if (originalMessage.content.includes('muatmuat.com')) {
+            messageType = MessageType.MODULE
+        }
+
         const message = await Message.create({
             chatRoomId: targetRoomId,
             senderId: userId,
