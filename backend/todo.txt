@@ -55,6 +55,12 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 16. status jam pasir -> OK
 17. status icon -> OK
 18. today, yesterday, date, so on
-19. can reply & forward opponent message
+19. can reply & forward opponent message -> OK
 20. if replying message, then delete the replied message, the replied message will be deleted too -> OK
 21. check initiatorName and recipientName in forwarded message -> OK
+22. middleware
+23. logging with winston
+24. auth api
+25. auth socket
+26. socketio with polling
+27. ws & wss
