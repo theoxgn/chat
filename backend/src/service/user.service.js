@@ -208,6 +208,18 @@ class UserService {
         }
         return user.role === role;
     }
+
+    async changeNameCheck(userId) {
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new ResponseError(404, 'User not found');
+        }
+
+        if (new Date() - user.lastNameChange <= 30 * 24 * 60 * 60 * 1000) {
+            return false;
+        }
+        return true;
+    }
 }
 
 module.exports = new UserService();

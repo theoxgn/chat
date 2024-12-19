@@ -15,5 +15,6 @@ userRouter.put('/api/users', UserController.updateUser);
 userRouter.get('/api/users/:userId', UserController.getUserById);
 userRouter.get('/api/users/:userId/viewAs', UserController.checkUserRole);
 userRouter.get('/api/users/online', UserController.getOnlineUsers);
+userRouter.get('/api/users/:userId/allowedChangeName', UserController.changeNameCheck);
 
 module.exports = userRouter;

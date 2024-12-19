@@ -116,6 +116,19 @@ class UserController {
             next(error);
         }
     }
+
+    async changeNameCheck(req, res, next) {
+        try {
+            const {userId} = req.params;
+            const result = await UserService.changeNameCheck(userId);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new UserController();
