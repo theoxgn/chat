@@ -71,6 +71,27 @@ class UserController {
             next(error);
         }
     }
+
+    async getUserById(req, res, next) {
+        try {
+            const {userId} = req.params;
+            const result = await UserService.getUserById(userId);
+            return SuccessResponse.toJSON(req, res, 200, 'User retrieved successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async checkUserRole(req, res, next) {
+        try {
+            const {userId} = req.params;
+            const {role} = req.query;
+            const result = await UserService.checkUserRole(userId, role);
+            return SuccessResponse.toJSON(req, res, 200, 'User role checked successfully', result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new UserController();

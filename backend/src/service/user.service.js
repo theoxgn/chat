@@ -191,6 +191,17 @@ class UserService {
             }
         });
     }
+
+    async getUserById(userId) {
+        const user = await User.findByPk(userId);
+        user.setDataValue('chatRoles', [ChatRole.BUYER, ChatRole.SELLER, ChatRole.SHIPPER, ChatRole.TRANSPORTER]);
+        return user;
+    }
+
+    async checkUserRole(userId, role) {
+        const user = await User.findByPk(userId);
+        return user.role === role;
+    }
 }
 
 module.exports = new UserService();
