@@ -74,159 +74,270 @@ app.use(menuRouter);
 io.on('connection', (socket) => {
     console.log('User connected to socketio:', socket.id);
 
+    // Global error handler for socket
+    const handleError = (error, eventName) => {
+        console.error(`Error in ${eventName}:`, error);
+        socket.emit('error_occurred', {
+            message: 'An error occurred while processing your request',
+            event: eventName
+        });
+    };
+
+    // Helper function to validate data
+    const validateData = (data, requiredFields) => {
+        return requiredFields.every(field => {
+            const hasField = data && data.hasOwnProperty(field) && data[field] !== null && data[field] !== undefined;
+            if (!hasField) {
+                console.error(`Missing required field: ${field}`);
+            }
+            return hasField;
+        });
+    };
+
     // !Handle user online status
     socket.on('set_online_user', async (userId) => {
-        onlineUsers.set(userId, socket.id);
-        console.log('User online:', userId);
+        try {
+            if (!userId) {
+                throw new Error('UserId is required');
+            }
 
-        // Broadcast ke semua client bahwa user ini online
-        io.emit('user_status_changed', {
-            userId,
-            status: 'online'
-        });
+            onlineUsers.set(userId, socket.id);
+            console.log('User online:', userId);
 
-        // Kirim daftar semua user yang online ke client yang baru connect
-        socket.emit('get_online_users', Array.from(onlineUsers.keys()));
+            io.emit('user_status_changed', {
+                userId,
+                status: 'online'
+            });
 
-        // Update last seen
-        await UserService.updateUserLastSeen(userId);
+            socket.emit('get_online_users', Array.from(onlineUsers.keys()));
+
+            await UserService.updateUserLastSeen(userId);
+        } catch (error) {
+            handleError(error, 'set_online_user');
+        }
     });
 
     // !Handle get online users
     socket.on('get_online_users', () => {
-        socket.emit('get_online_users', Array.from(onlineUsers.keys()));
+        try {
+            socket.emit('get_online_users', Array.from(onlineUsers.keys()));
+        } catch (error) {
+            handleError(error, 'get_online_users');
+        }
     });
 
     // !Handle user offline status
     socket.on('set_user_offline', async (userId) => {
-        onlineUsers.delete(userId);
-        io.emit('user_status_changed', {userId, online: false});
+        try {
+            if (!userId) {
+                throw new Error('UserId is required');
+            }
 
-        // Update last seen
-        await UserService.updateUserLastSeen(userId);
+            onlineUsers.delete(userId);
+            io.emit('user_status_changed', {userId, online: false});
+
+            await UserService.updateUserLastSeen(userId);
+        } catch (error) {
+            handleError(error, 'set_user_offline');
+        }
     });
 
     // !Handle typing status
     socket.on('set_typing', (data) => {
-        const {roomId, userId, typing} = data;
+        try {
+            if (!validateData(data, ['roomId', 'userId', 'typing'])) {
+                throw new Error('Invalid data for typing status');
+            }
 
-        // send to all clients
-        io.emit('receive_typing', {userId, typing});
-
-        // send to specific room
-        socket.to(roomId).emit('receive_typing', {userId, typing});
+            const {roomId, userId, typing} = data;
+            io.emit('receive_typing', {userId, typing});
+            socket.to(roomId).emit('receive_typing', {userId, typing});
+        } catch (error) {
+            handleError(error, 'set_typing');
+        }
     });
 
     // !Handle room joining
     socket.on('join_room', (roomId) => {
-        socket.join(roomId);
-        console.log(`User ${socket.id} joined room ${roomId}`);
+        try {
+            if (!roomId) {
+                throw new Error('RoomId is required');
+            }
+
+            socket.join(roomId);
+            console.log(`User ${socket.id} joined room ${roomId}`);
+        } catch (error) {
+            handleError(error, 'join_room');
+        }
     });
 
     // !Handle room leaving
     socket.on('leave_room', (roomId) => {
-        socket.leave(roomId);
-        console.log(`User ${socket.id} left room ${roomId}`);
+        try {
+            if (!roomId) {
+                throw new Error('RoomId is required');
+            }
+
+            socket.leave(roomId);
+            console.log(`User ${socket.id} left room ${roomId}`);
+        } catch (error) {
+            handleError(error, 'leave_room');
+        }
     });
 
     // !Handle user sending message
     socket.on('send_message', async (data) => {
-        const {roomId, userId, content, tempId, files} = data;
-        console.log(data, " <-- received on server");
-        const message = await MessageServices.createMessage(roomId, userId, content, files);
-        console.log(message, " <-- message created on server");
-        const messageJson = JSON.parse(JSON.stringify(message));
-        messageJson.tempId = tempId;
-        io.to(roomId).emit('receive_message', messageJson);
+        try {
+            if (!validateData(data, ['roomId', 'userId', 'content', 'tempId'])) {
+                throw new Error('Invalid message data');
+            }
 
-        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+            const {roomId, userId, content, tempId, files} = data;
+            console.log(data, " <-- received on server");
+
+            const message = await MessageServices.createMessage(roomId, userId, content, files);
+            console.log(message, " <-- message created on server");
+
+            const messageJson = JSON.parse(JSON.stringify(message));
+            messageJson.tempId = tempId;
+            io.to(roomId).emit('receive_message', messageJson);
+
+            await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+        } catch (error) {
+            handleError(error, 'send_message');
+            // Send failure notification back to sender
+            socket.emit('message_failed', {tempId: data?.tempId, error: error.message});
+        }
     });
 
     // !Handle message read
     socket.on('read_message', async (data) => {
-        const {roomId, userId, messageIds} = data;
+        try {
+            if (!validateData(data, ['roomId', 'userId', 'messageIds'])) {
+                throw new Error('Invalid read message data');
+            }
 
-        // Update in database
-        const updated = await MessageServices.readMessage(roomId, userId, messageIds);
+            const {roomId, userId, messageIds} = data;
+            const updated = await MessageServices.readMessage(roomId, userId, messageIds);
 
-        // Broadcast to all clients in the room that messages have been read
-        console.log("sending message read update to room", roomId);
-        socket.to(roomId).emit('message_read_update', {
-            messageIds
-        });
+            console.log("sending message read update to room", roomId);
+            socket.to(roomId).emit('message_read_update', {messageIds});
 
-        console.log(updated, " <-- message read on server");
-        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+            console.log(updated, " <-- message read on server");
+            await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+        } catch (error) {
+            handleError(error, 'read_message');
+        }
     });
 
     // !Handle message update
     socket.on('update_message', async (data) => {
-        const {roomId, messageId, content} = data;
-        console.log(data, " <-- received on server");
-        const updatedMessage = await MessageServices.editMessage(messageId, content);
-        io.to(roomId).emit('message_updated', updatedMessage);
+        try {
+            if (!validateData(data, ['roomId', 'messageId', 'content'])) {
+                throw new Error('Invalid update message data');
+            }
 
-        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+            const {roomId, messageId, content} = data;
+            console.log(data, " <-- received on server");
+
+            const updatedMessage = await MessageServices.editMessage(messageId, content);
+            io.to(roomId).emit('message_updated', updatedMessage);
+
+            await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+        } catch (error) {
+            handleError(error, 'update_message');
+            socket.emit('message_update_failed', {messageId: data?.messageId, error: error.message});
+        }
     });
 
     // !Handle message delete
     socket.on('delete_message', async (data) => {
-        const {roomId, messageId} = data;
-        console.log(data, " <-- received on server");
-        const deletedMessage = await MessageServices.deleteMessage(messageId);
-        deletedMessage.setDataValue('files', []);
-        io.to(roomId).emit('message_deleted', deletedMessage);
+        try {
+            if (!validateData(data, ['roomId', 'messageId'])) {
+                throw new Error('Invalid delete message data');
+            }
 
-        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+            const {roomId, messageId} = data;
+            console.log(data, " <-- received on server");
+
+            const deletedMessage = await MessageServices.deleteMessage(messageId);
+            deletedMessage.setDataValue('files', []);
+            io.to(roomId).emit('message_deleted', deletedMessage);
+
+            await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+        } catch (error) {
+            handleError(error, 'delete_message');
+            socket.emit('message_delete_failed', {messageId: data?.messageId, error: error.message});
+        }
     });
 
     // !Handle message reply
     socket.on('reply_message', async (data) => {
-        const {roomId, userId, content, replyTo, tempId} = data;
-        console.log(data, " <-- received on server");
-        const replyMessage = await MessageServices.replyMessage(roomId, userId, content, replyTo);
-        const messageJson = JSON.parse(JSON.stringify(replyMessage));
-        messageJson.tempId = tempId;
-        io.to(roomId).emit('message_replied', messageJson);
+        try {
+            if (!validateData(data, ['roomId', 'userId', 'content', 'replyTo', 'tempId'])) {
+                throw new Error('Invalid reply message data');
+            }
 
-        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+            const {roomId, userId, content, replyTo, tempId} = data;
+            console.log(data, " <-- received on server");
+
+            const replyMessage = await MessageServices.replyMessage(roomId, userId, content, replyTo);
+            const messageJson = JSON.parse(JSON.stringify(replyMessage));
+            messageJson.tempId = tempId;
+            io.to(roomId).emit('message_replied', messageJson);
+
+            await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+        } catch (error) {
+            handleError(error, 'reply_message');
+            socket.emit('message_reply_failed', {tempId: data?.tempId, error: error.message});
+        }
     });
 
     // !Handle message forward
     socket.on('forward_message', async (data) => {
-        const {targetRoomId, userId, messageId} = data;
-        data.roomId = targetRoomId;
-        console.log(data, " <-- received on server");
-        const forwardMessage = await MessageServices.forwardMessage(messageId, targetRoomId, userId);
-        io.to(targetRoomId).emit('receive_message', forwardMessage);
+        try {
+            if (!validateData(data, ['targetRoomId', 'userId', 'messageId'])) {
+                throw new Error('Invalid forward message data');
+            }
 
-        await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+            const {targetRoomId, userId, messageId} = data;
+            data.roomId = targetRoomId;
+            console.log(data, " <-- received on server");
+
+            const forwardMessage = await MessageServices.forwardMessage(messageId, targetRoomId, userId);
+            io.to(targetRoomId).emit('receive_message', forwardMessage);
+
+            await SocketService.publishChatListUpdate(data, io, onlineUsers, MessageServices, RoomServices);
+        } catch (error) {
+            handleError(error, 'forward_message');
+            socket.emit('message_forward_failed', {messageId: data?.messageId, error: error.message});
+        }
     });
 
     // !Handle disconnect
     socket.on('disconnect', async () => {
-        // Cari userId berdasarkan socket.id yang disconnect
-        let disconnectedUserId = null;
-        for (const [userId, socketId] of onlineUsers.entries()) {
-            if (socketId === socket.id) {
-                disconnectedUserId = userId;
-                break;
+        try {
+            let disconnectedUserId = null;
+            for (const [userId, socketId] of onlineUsers.entries()) {
+                if (socketId === socket.id) {
+                    disconnectedUserId = userId;
+                    break;
+                }
             }
-        }
 
-        if (disconnectedUserId) {
-            // Hapus user dari daftar online
-            onlineUsers.delete(disconnectedUserId);
-            console.log('User disconnected:', disconnectedUserId);
+            if (disconnectedUserId) {
+                onlineUsers.delete(disconnectedUserId);
+                console.log('User disconnected:', disconnectedUserId);
 
-            // Broadcast ke semua client bahwa user ini offline
-            io.emit('user_status_changed', {
-                userId: disconnectedUserId,
-                status: 'offline'
-            });
+                io.emit('user_status_changed', {
+                    userId: disconnectedUserId,
+                    status: 'offline'
+                });
 
-            // Update last seen
-            await UserService.updateUserLastSeen(disconnectedUserId);
+                await UserService.updateUserLastSeen(disconnectedUserId);
+            }
+        } catch (error) {
+            console.error('Error in disconnect handler:', error);
         }
     });
 });
