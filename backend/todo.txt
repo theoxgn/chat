@@ -58,9 +58,11 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 19. can reply & forward opponent message -> OK
 20. if replying message, then delete the replied message, the replied message will be deleted too -> OK
 21. check initiatorName and recipientName in forwarded message -> OK
-22. middleware
+22. middleware -> OK
 23. logging with winston
 24. auth api
-25. auth socket
-26. socketio with polling
-27. ws & wss
+25. auth socket -> OK
+26. socketio with polling -> OK
+27. ws & wss -> OK
+28. xls, zip on frontend & backend -> OK
+29. validation
