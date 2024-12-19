@@ -11,7 +11,10 @@ class FileController {
 
             const result = await FileService.uploadFile(req.file);
 
-            return await SuccessResponse.toJSON(req, res, 200, 'File uploaded successfully', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }

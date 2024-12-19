@@ -11,7 +11,10 @@ class UserController {
             }
 
             const result = await UserService.createUser(username, muatUserId, companyName, role);
-            return SuccessResponse.toJSON(req, res, 201, 'User created successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -23,7 +26,10 @@ class UserController {
                 name
             } = req.query;
             const result = await UserService.getAllUsers(name);
-            return SuccessResponse.toJSON(req, res, 200, 'Users retrieved successfully', result);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -35,7 +41,10 @@ class UserController {
                 role
             } = req.query;
             const result = await UserService.getAllUsersByRole(role);
-            return SuccessResponse.toJSON(req, res, 200, 'Users retrieved successfully', result);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -47,7 +56,10 @@ class UserController {
                 role
             } = req.query;
             const result = await UserService.getOpponentUsers(role);
-            return SuccessResponse.toJSON(req, res, 200, 'Opponent users retrieved successfully', result);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -57,7 +69,10 @@ class UserController {
         try {
             const {muatUserId, username, companyName} = req.body;
             const result = await UserService.updateUser(muatUserId, username, companyName);
-            return SuccessResponse.toJSON(req, res, 200, 'User updated successfully', result);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -66,7 +81,10 @@ class UserController {
     async getOnlineUsers(req, res, next) {
         try {
             const result = await UserService.getOnlineUsers();
-            return SuccessResponse.toJSON(req, res, 200, 'Online users retrieved successfully', result);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -76,7 +94,10 @@ class UserController {
         try {
             const {userId} = req.params;
             const result = await UserService.getUserById(userId);
-            return SuccessResponse.toJSON(req, res, 200, 'User retrieved successfully', result);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -87,7 +108,10 @@ class UserController {
             const {userId} = req.params;
             const {role} = req.query;
             const result = await UserService.checkUserRole(userId, role);
-            return SuccessResponse.toJSON(req, res, 200, 'User role checked successfully', result);
+            return SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }

@@ -8,7 +8,10 @@ class RoomController {
         try {
             const {initiatorId, recipientId, initiatorRole, recipientRole, menuName, subMenuName, message} = req.body;
             const result = await RoomService.createOrFindRoom(initiatorId, recipientId, initiatorRole, recipientRole, menuName, subMenuName, message);
-            return await SuccessResponse.toJSON(req, res, 201, 'Room created successfully', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
 
         } catch (error) {
             next(error);

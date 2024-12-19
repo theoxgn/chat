@@ -15,7 +15,10 @@ class ChatController {
                 throw new ResponseError(400, 'Room ID and User ID are required');
             }
             const result = await ChatService.createChatTypingStatus(roomId, userId, typing);
-            res.json(result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -26,7 +29,10 @@ class ChatController {
         try {
             const roomKey = `room:${req.params.roomId}`;
             const result = await ChatService.getChatTypingStatus(roomKey);
-            res.json(result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -36,7 +42,10 @@ class ChatController {
         try {
             const {userId, roomId} = req.body;
             const result = await ChatService.createChatPin(userId, roomId);
-            return await SuccessResponse.toJSON(req, res, 201, 'Chat pinned successfully', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -46,7 +55,10 @@ class ChatController {
         try {
             const {userId, roomId} = req.body;
             const result = await ChatService.deleteChatPin(userId, roomId);
-            return await SuccessResponse.toJSON(req, res, 200, 'Chat pin deleted successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -56,7 +68,10 @@ class ChatController {
         try {
             const {userId} = req.params;
             const result = await ChatService.getPinnedChats(userId);
-            return await SuccessResponse.toJSON(req, res, 200, 'Pinned chats retrieved successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -75,10 +90,16 @@ class ChatController {
             } = req.query;
             if (groupBy === "category") {
                 const result = await ChatService.getAllChatsViewCategory(userId, viewAs, subMenuId, isAll, page, size);
-                return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
+                return await SuccessResponse.showMessage(200, {
+                    Data: result,
+                    Type: req.originalUrl,
+                }, true, res);
             } else if (groupBy === "user") {
                 const result = await ChatService.getAllChatsViewUser(userId, viewAs, subMenuId, isAll, page, size);
-                return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
+                return await SuccessResponse.showMessage(200, {
+                    Data: result,
+                    Type: req.originalUrl,
+                }, true, res);
             } else {
                 throw new ResponseError(400, 'Invalid groupBy parameter');
             }
@@ -92,10 +113,13 @@ class ChatController {
             const {searchTerm, viewAs, subMenuId, currentUserId} = req.query;
             const usersResult = await UserService.getAllConnectedUsers(searchTerm, viewAs, subMenuId, currentUserId);
             const chatsResult = await ChatService.searchChatsByMessage(searchTerm, viewAs, subMenuId, currentUserId);
-            return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', {
-                users: usersResult,
-                chats: chatsResult
-            });
+            return await SuccessResponse.showMessage(200, {
+                Data: {
+                    users: usersResult,
+                    chats: chatsResult,
+                },
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }

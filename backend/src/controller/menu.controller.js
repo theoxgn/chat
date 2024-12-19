@@ -9,8 +9,10 @@ class MenuController {
             const {userId} = req.params;
             const {viewAs} = req.query;
             const result = await MenuService.getAllMenusByUser(userId, viewAs);
-            return await SuccessResponse.toJSON(req, res, 200, 'Menus retrieved successfully', result);
-
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -21,7 +23,10 @@ class MenuController {
             const {subMenuId} = req.params;
             const {userId, viewAs} = req.query;
             const result = await MenuService.favoriteSubMenu(subMenuId, userId, viewAs);
-            return await SuccessResponse.toJSON(req, res, 200, 'Favorite', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
 
         } catch (error) {
             next(error);
@@ -33,7 +38,10 @@ class MenuController {
             const {userId} = req.params;
             const {viewAs} = req.query;
             const result = await MenuService.getAllMenusFavoriteByUser(userId, viewAs);
-            return await SuccessResponse.toJSON(req, res, 200, 'Favorite', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }

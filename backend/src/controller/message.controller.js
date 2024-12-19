@@ -9,7 +9,10 @@ class MessageController {
             const {roomId} = req.params;
             const {page, size} = req.query;
             const result = await MessageService.getMessagesByRoomId(roomId, page, size);
-            return await SuccessResponse.toJSON(req, res, 200, 'Messages retrieved successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -19,7 +22,10 @@ class MessageController {
         try {
             const {roomId, userId, content} = req.body;
             const result = await MessageService.createMessage(roomId, userId, content);
-            return await SuccessResponse.toJSON(req, res, 201, 'Message sent successfully', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -29,7 +35,10 @@ class MessageController {
         try {
             const {roomId, userId, messageIds} = req.body;
             const result = await MessageService.readMessage(roomId, userId, messageIds);
-            return await SuccessResponse.toJSON(req, res, 200, 'Message read successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -39,7 +48,10 @@ class MessageController {
         try {
             const {roomId, userId, content, replyTo} = req.body;
             const result = await MessageService.replyMessage(roomId, userId, content, replyTo);
-            return await SuccessResponse.toJSON(req, res, 201, 'Message replied successfully', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -49,7 +61,10 @@ class MessageController {
         try {
             const {userId} = req.params;
             const result = await MessageService.getUnreadMessagesCount(userId);
-            return await SuccessResponse.toJSON(req, res, 200, 'Unread messages count retrieved successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -68,7 +83,10 @@ class MessageController {
             }
 
             const result = await MessageService.searchMessageInRoom(roomId, searchQuery);
-            res.json(result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -78,7 +96,10 @@ class MessageController {
         try {
             const {messageId} = req.params;
             const result = await MessageService.deleteMessage(messageId);
-            return await SuccessResponse.toJSON(req, res, 200, 'Message deleted successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -88,7 +109,10 @@ class MessageController {
         try {
             const {messageId, targetRoomId, userId} = req.body;
             const result = await MessageService.forwardMessage(messageId, targetRoomId, userId);
-            return await SuccessResponse.toJSON(req, res, 200, 'Message forwarded successfully', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -99,7 +123,10 @@ class MessageController {
             const {messageId} = req.params;
             const {content} = req.body;
             const result = await MessageService.editMessage(messageId, content);
-            return await SuccessResponse.toJSON(req, res, 200, 'Message edited successfully', result);
+            return await SuccessResponse.showMessage(200, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
@@ -109,7 +136,10 @@ class MessageController {
         try {
             const {userId, informationType, newData} = req.body;
             const result = await MessageService.createInformationMessage(userId, informationType, newData);
-            return await SuccessResponse.toJSON(req, res, 201, 'Information message sent successfully', result);
+            return await SuccessResponse.showMessage(201, {
+                Data: result,
+                Type: req.originalUrl,
+            }, true, res);
         } catch (error) {
             next(error);
         }
