@@ -1,4 +1,4 @@
-const ErrorResponse = require("../response/error.response");
+const ResponseError = require("../response/error.response");
 const SuccessResponse = require("../response/success.response");
 const UserService = require("../service/user.service");
 
@@ -7,7 +7,7 @@ class UserController {
         try {
             const {username, muatUserId, companyName, role} = req.body;
             if (!username) {
-                throw new ErrorResponse(400, "Bad Request", "Username is required");
+                throw new ResponseError(400, "Username is required");
             }
 
             const result = await UserService.createUser(username, muatUserId, companyName, role);

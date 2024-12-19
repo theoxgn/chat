@@ -1,4 +1,4 @@
-const ErrorResponse = require("../response/error.response");
+const ResponseError = require("../response/error.response");
 const SuccessResponse = require("../response/success.response");
 
 // * Import Service
@@ -12,7 +12,7 @@ class ChatController {
             console.log('Received typing update:', req.body); // Debug log
             const {roomId, userId, typing} = req.body;
             if (!roomId || !userId) {
-                throw new ErrorResponse(400, 'Bad Request', 'Room ID and User ID are required');
+                throw new ResponseError(400, 'Room ID and User ID are required');
             }
             const result = await ChatService.createChatTypingStatus(roomId, userId, typing);
             res.json(result);
@@ -80,7 +80,7 @@ class ChatController {
                 const result = await ChatService.getAllChatsViewUser(userId, viewAs, subMenuId, isAll, page, size);
                 return await SuccessResponse.toJSON(req, res, 200, 'All chats retrieved successfully', result);
             } else {
-                throw new ErrorResponse(400, 'Bad Request', 'Invalid groupBy parameter');
+                throw new ResponseError(400, 'Invalid groupBy parameter');
             }
         } catch (error) {
             next(error);

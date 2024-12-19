@@ -1,7 +1,7 @@
 const {User, FavoriteSubMenu, ChatSubMenu} = require('../../models');
 const sequelize = require("sequelize");
 const db = require("../../models");
-const ErrorResponse = require("../response/error.response");
+const ResponseError = require("../response/error.response");
 const ChatRole = require("../enums/chat.role");
 
 class MenuService {
@@ -30,7 +30,7 @@ class MenuService {
         // * Find user by userId
         const user = await User.findByPk(userId);
         if (!user) {
-            throw new ErrorResponse(404, 'User not found');
+            throw new ResponseError(404, 'User not found');
         }
 
         // * Determine oposite role
@@ -92,13 +92,13 @@ class MenuService {
         // * Validate user
         const user = await User.findByPk(userId);
         if (!user) {
-            throw new ErrorResponse(404, 'User not found');
+            throw new ResponseError(404, 'User not found');
         }
 
         // * Validate sub menu
         const subMenu = await ChatSubMenu.findByPk(subMenuId);
         if (!subMenu) {
-            throw new ErrorResponse(404, 'Sub menu not found');
+            throw new ResponseError(404, 'Sub menu not found');
         }
 
 
@@ -136,7 +136,7 @@ class MenuService {
         // * Find user by userId
         const user = await User.findByPk(userId);
         if (!user) {
-            throw new ErrorResponse(404, 'User not found');
+            throw new ResponseError(404, 'User not found');
         }
 
         // * Determine oposite role

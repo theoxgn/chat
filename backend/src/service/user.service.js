@@ -1,7 +1,7 @@
 const onlineUsers = require("../store/onlineUsers.store");
 const {User, ChatRoom} = require('../../models');
 const {Op} = require("sequelize");
-const ErrorResponse = require("../response/error.response");
+const ResponseError = require("../response/error.response");
 
 const MenuService = require("./menu.service");
 const ChatRole = require("../enums/chat.role");
@@ -73,7 +73,7 @@ class UserService {
             }
         });
         if (!existingUser) {
-            throw new ErrorResponse(404, 'Not Found', 'User not found');
+            throw new ResponseError(404, 'User not found');
         }
 
         // * Update user by userId
@@ -194,12 +194,18 @@ class UserService {
 
     async getUserById(userId) {
         const user = await User.findByPk(userId);
+        if (!user) {
+            throw new ResponseError(404, 'User not found');
+        }
         user.setDataValue('chatRoles', [ChatRole.BUYER, ChatRole.SELLER, ChatRole.SHIPPER, ChatRole.TRANSPORTER]);
         return user;
     }
 
     async checkUserRole(userId, role) {
         const user = await User.findByPk(userId);
+        if (!user) {
+            throw new ResponseError(404, 'User not found');
+        }
         return user.role === role;
     }
 }
