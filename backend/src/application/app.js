@@ -17,10 +17,9 @@ const io = new Server(server, {
     transports: ['websocket', "polling"]
 });
 
+// * Import middleware
 const {errorMiddleware} = require('../middleware/error.middleware');
-
-// * Import from service
-const onlineUsers = require('../store/onlineUsers.store')
+const {requestLogger, errorLogger} = require("../middleware/logger.middleware");
 
 // * Import routes
 const userRouter = require('../route/user.route');
@@ -32,6 +31,7 @@ const fileRouter = require('../route/file.route');
 const menuRouter = require('../route/menu.route');
 
 // * Import services
+const onlineUsers = require('../store/onlineUsers.store')
 const MessageServices = require('../service/message.service');
 const RoomServices = require('../service/room.service');
 const SocketService = require('../service/socket.service');
@@ -39,6 +39,7 @@ const UserService = require('../service/user.service');
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 app.use(userRouter);
 app.use(messagesRouter)
 app.use(chatRouter);
@@ -239,6 +240,9 @@ app.get('/', (req, res) => {
 
 // *Serve uploaded files
 app.use('/uploads', express.static('uploads'));
+
+// * Error logger
+app.use(errorLogger);
 
 // * Error Middleware
 app.use(errorMiddleware)
