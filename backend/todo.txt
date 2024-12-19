@@ -59,7 +59,7 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 20. if replying message, then delete the replied message, the replied message will be deleted too -> OK
 21. check initiatorName and recipientName in forwarded message -> OK
 22. middleware -> OK
-23. logging with winston
+23. logging with winston -> OK
 24. auth api
 25. auth socket -> OK
 26. socketio with polling -> OK
@@ -68,3 +68,4 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 29. validation
 30. refferal code
 31. gold transporter
+32. create user BF & others model
