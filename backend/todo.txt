@@ -66,3 +66,5 @@ soalnya tidak ikut berubah saat ada perubahan nama user. -> OK
 27. ws & wss -> OK
 28. xls, zip on frontend & backend -> OK
 29. validation
+30. refferal code
+31. gold transporter
